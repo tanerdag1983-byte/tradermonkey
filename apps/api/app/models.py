@@ -64,7 +64,7 @@ class Signal(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     user_id = Column(String, nullable=False, index=True)
     symbol = Column(String, nullable=False, index=True)
-    direction = Column(String, nullable=False)  # BUY / SELL
+    direction = Column(String, nullable=True)  # BUY / SELL / None for NO_TRADE
     entry_type = Column(String, nullable=True)
     entry_price = Column(Float, nullable=True)
     stop_loss = Column(Float, nullable=True)
@@ -95,6 +95,26 @@ class NewsItem(Base):
     embedding = Column(JSON, nullable=True)
     url = Column(Text, nullable=True)
     fetched_at = Column(DateTime(timezone=True), default=datetime.utcnow)
+
+
+class MarketBar(Base):
+    __tablename__ = "market_bars"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    symbol = Column(String, nullable=False, index=True)
+    timeframe = Column(String, nullable=False, index=True)  # e.g. 1d, 1h, 15m
+    timestamp = Column(DateTime(timezone=True), nullable=False, index=True)
+    open = Column(Float, nullable=False)
+    high = Column(Float, nullable=False)
+    low = Column(Float, nullable=False)
+    close = Column(Float, nullable=False)
+    volume = Column(Float, nullable=True)
+    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
+
+    __table_args__ = (
+        # Ensure unique bars per symbol/timeframe/timestamp
+        {"comment": "OHLCV market bars"},
+    )
 
 
 class AuditLog(Base):

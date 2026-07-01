@@ -11,6 +11,8 @@ from app.services.risk.engine import (
     calculate_position_size,
     validate_signal_against_risk,
 )
+from app.services.market.data import sync_symbol_bars, get_bars_as_df
+from app.services.market.technical import build_market_context
 
 router = APIRouter(prefix="/signals", tags=["signals"])
 
@@ -150,13 +152,18 @@ async def generate_signal_endpoint(
         },
     }
 
+    # Fetch or sync real market bars + build technical context
+    sync_symbol_bars(db, symbol, timeframe="1d", lookback_days=120)
+    df_bars = get_bars_as_df(db, symbol, timeframe="1d", limit=90)
+    market_context = build_market_context(df_bars) if not df_bars.empty else {"error": "no market data"}
+
+    # Convert chart bars to lightweight records for the prompt
+    chart_summary = df_bars.tail(30)[["timestamp", "open", "high", "low", "close", "volume"]].to_dict(orient="records") if not df_bars.empty else []
+
     market_state = {
         "symbol": symbol,
-        "last_price": 100.0,
-        "atr_14": 2.0,
-        "spread_bps": 4.0,
-        "trend": "up",
-        "regime": "risk_on",
+        "context": market_context,
+        "recent_bars": chart_summary,
     }
 
     signal = await generate_signal(symbol, portfolio, broker, market_state, sources)
@@ -164,56 +171,63 @@ async def generate_signal_endpoint(
     # Normalize and fill risk details for actionable intents
     if signal.get("status") == "TRADE_INTENT" and signal.get("direction"):
         direction = signal["direction"]
+        ctx = market_state.get("context", {})
+        last_price = ctx.get("last_price")
+        atr_14 = ctx.get("atr_14")
+
         entry_price = (
             signal.get("entry_price")
             or signal.get("risk", {}).get("entry_price")
-            or market_state["last_price"]
+            or last_price
         )
         stop_loss = (
             signal.get("stop_loss")
             or signal.get("risk", {}).get("stop_loss")
-            or calculate_atr_stop(entry_price, market_state["atr_14"], direction, multiplier=1.5)
+            or (calculate_atr_stop(entry_price, atr_14, direction, multiplier=1.5) if entry_price and atr_14 else None)
         )
         take_profit = (
             signal.get("take_profit")
             or signal.get("risk", {}).get("take_profit")
-            or calculate_take_profits(entry_price, stop_loss, direction)
+            or (calculate_take_profits(entry_price, stop_loss, direction) if entry_price and stop_loss else None)
         )
 
-        signal["entry_price"] = entry_price
-        signal["stop_loss"] = stop_loss
-        signal["take_profit"] = take_profit
-        signal.setdefault("risk", {})
-        signal["risk"]["entry_type"] = signal.get("risk", {}).get("entry_type") or "market"
-        signal["risk"]["entry_price"] = entry_price
-        signal["risk"]["stop_loss"] = stop_loss
-        signal["risk"]["take_profit"] = take_profit
+        if entry_price and stop_loss:
+            signal["entry_price"] = entry_price
+            signal["stop_loss"] = stop_loss
+            signal["take_profit"] = take_profit
+            signal.setdefault("risk", {})
+            signal["risk"]["entry_type"] = signal.get("risk", {}).get("entry_type") or "market"
+            signal["risk"]["entry_price"] = entry_price
+            signal["risk"]["stop_loss"] = stop_loss
+            signal["risk"]["take_profit"] = take_profit
 
-        signal = validate_signal_against_risk(
-            signal,
-            portfolio_value=portfolio_value or 50000,
-            risk_limits=RISK_LIMITS,
-            existing_exposure=sum(p.market_value or 0 for p in positions),
-        )
+            signal = validate_signal_against_risk(
+                signal,
+                portfolio_value=portfolio_value or 50000,
+                risk_limits=RISK_LIMITS,
+                existing_exposure=sum(p.market_value or 0 for p in positions),
+            )
+        else:
+            signal["status"] = "REVIEW_REQUIRED"
+            signal.setdefault("compliance", {}).setdefault("reasons", []).append("Missing market price or ATR")
 
-    # Save signal to DB only if actionable
-    if signal.get("direction"):
-        db_signal = Signal(
-            user_id=user.id,
-            symbol=symbol,
-            direction=signal.get("direction"),
-            entry_type=signal.get("risk", {}).get("entry_type"),
-            entry_price=signal.get("risk", {}).get("entry_price"),
-            stop_loss=signal.get("risk", {}).get("stop_loss"),
-            take_profit_1=signal.get("risk", {}).get("take_profit", [None, None])[0] if isinstance(signal.get("risk", {}).get("take_profit"), list) else None,
-            take_profit_2=signal.get("risk", {}).get("take_profit", [None, None])[1] if isinstance(signal.get("risk", {}).get("take_profit"), list) else None,
-            quantity=signal.get("risk", {}).get("quantity"),
-            confidence=signal.get("confidence"),
-            status="generated",
-            analysis_json=signal,
-        )
-        db.add(db_signal)
-        db.commit()
+    # Save signal to DB for any AI decision (TRADE_INTENT, REVIEW_REQUIRED, NO_TRADE)
+    db_signal = Signal(
+        user_id=user.id,
+        symbol=symbol,
+        direction=signal.get("direction") if signal.get("status") == "TRADE_INTENT" else None,
+        entry_type=signal.get("risk", {}).get("entry_type") if signal.get("status") == "TRADE_INTENT" else None,
+        entry_price=signal.get("risk", {}).get("entry_price") if signal.get("status") == "TRADE_INTENT" else None,
+        stop_loss=signal.get("risk", {}).get("stop_loss") if signal.get("status") == "TRADE_INTENT" else None,
+        take_profit_1=(signal.get("risk", {}).get("take_profit", [None, None])[0] if isinstance(signal.get("risk", {}).get("take_profit"), list) else None) if signal.get("status") == "TRADE_INTENT" else None,
+        take_profit_2=(signal.get("risk", {}).get("take_profit", [None, None])[1] if isinstance(signal.get("risk", {}).get("take_profit"), list) else None) if signal.get("status") == "TRADE_INTENT" else None,
+        quantity=signal.get("risk", {}).get("quantity") if signal.get("status") == "TRADE_INTENT" else None,
+        confidence=signal.get("confidence"),
+        status="generated",
+        analysis_json=signal,
+    )
+    db.add(db_signal)
+    db.commit()
 
     return {"success": True, "data": signal}
 

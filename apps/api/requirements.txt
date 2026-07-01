@@ -36,6 +36,9 @@ sentencepiece>=0.2.0
 protobuf>=5.29.0
 
 
-# Testing
+# Market data
+yfinance>=0.2.55
+pandas>=2.2.0
+numpy>=2.0.0
 pytest>=8.3.5
 pytest-asyncio>=0.25.0

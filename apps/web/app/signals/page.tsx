@@ -149,6 +149,12 @@ export default function SignalsPage() {
   );
 }
 
+const statusLabels: Record<string, string> = {
+  generated: "AI advies",
+  approved: "Goedgekeurd",
+  rejected: "Afgewezen",
+};
+
 function SignalCard({
   signal,
   onApprove,
@@ -158,49 +164,78 @@ function SignalCard({
   onApprove: () => void;
   onReject: () => void;
 }) {
+  const status = signal.analysis?.status as string | undefined;
+  const isTradeIntent = status === "TRADE_INTENT";
+  const isNoTrade = status === "NO_TRADE";
+  const isReview = status === "REVIEW_REQUIRED";
   const isBullish = signal.direction === "BUY";
+
+  const badgeColor = isNoTrade
+    ? "bg-slate-100 text-slate-700"
+    : isReview
+    ? "bg-amber-100 text-amber-700"
+    : isBullish
+    ? "bg-green-100 text-green-700"
+    : "bg-red-100 text-red-700";
+
+  const directionLabel = signal.direction || status?.replace("_", " ") || "ADVIES";
 
   return (
     <div className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm">
       <div className="mb-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <span className={`text-lg font-bold ${isBullish ? "text-green-600" : "text-red-600"}`}>
+          <span className={`text-lg font-bold ${isBullish ? "text-green-600" : isNoTrade || isReview ? "text-zinc-700" : "text-red-600"}`}>
             {signal.symbol}
           </span>
-          <span
-            className={`rounded-full px-2 py-1 text-xs font-medium ${
-              isBullish ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
-            }`}
-          >
-            {signal.direction}
+          <span className={`rounded-full px-2 py-1 text-xs font-medium uppercase ${badgeColor}`}>
+            {directionLabel}
           </span>
           <span className="rounded-full bg-zinc-100 px-2 py-1 text-xs font-medium text-zinc-700 capitalize">
-            {signal.status}
+            {statusLabels[signal.status] || signal.status}
           </span>
         </div>
-        <span className="text-sm text-zinc-500">
-          Confidence: {((signal.confidence || 0) * 100).toFixed(0)}%
-        </span>
+        {signal.confidence !== null && signal.confidence !== undefined && (
+          <span className="text-sm text-zinc-500">
+            Confidence: {(signal.confidence * 100).toFixed(0)}%
+          </span>
+        )}
       </div>
 
-      <div className="mb-4 grid grid-cols-3 gap-4 text-sm">
-        <div>
-          <p className="text-zinc-500">Entry</p>
-          <p className="font-medium text-zinc-900">{signal.entry_price ? `€${signal.entry_price}` : "—"}</p>
+      {isTradeIntent && (
+        <div className="mb-4 grid grid-cols-3 gap-4 text-sm">
+          <div>
+            <p className="text-zinc-500">Entry</p>
+            <p className="font-medium text-zinc-900">{signal.entry_price ? `$${signal.entry_price}` : "—"}</p>
+          </div>
+          <div>
+            <p className="text-zinc-500">Stop loss</p>
+            <p className="font-medium text-zinc-900">{signal.stop_loss ? `$${signal.stop_loss}` : "—"}</p>
+          </div>
+          <div>
+            <p className="text-zinc-500">Genereerd</p>
+            <p className="font-medium text-zinc-900">
+              {new Date(signal.generated_at).toLocaleString("nl-NL")}
+            </p>
+          </div>
         </div>
-        <div>
-          <p className="text-zinc-500">Stop loss</p>
-          <p className="font-medium text-zinc-900">{signal.stop_loss ? `€${signal.stop_loss}` : "—"}</p>
-        </div>
-        <div>
-          <p className="text-zinc-500">Genereerd</p>
-          <p className="font-medium text-zinc-900">
-            {new Date(signal.generated_at).toLocaleString("nl-NL")}
-          </p>
-        </div>
+      )}
+
+      <div className="mb-4 text-sm text-zinc-700 leading-relaxed">
+        {signal.analysis?.thesis || "Geen analyse beschikbaar."}
       </div>
 
-      {signal.status === "generated" && (
+      {(signal.analysis?.invalidation_conditions as string[] | undefined)?.length > 0 && (
+        <div className="mb-4 text-xs text-zinc-500">
+          <p className="font-medium text-zinc-600 mb-1">Invalidatie:</p>
+          <ul className="list-disc ml-4 space-y-0.5">
+            {(signal.analysis.invalidation_conditions as string[]).map((c, i) => (
+              <li key={i}>{c}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {isTradeIntent && signal.status === "generated" && (
         <div className="flex gap-3">
           <button
             onClick={onApprove}

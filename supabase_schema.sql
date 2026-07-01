@@ -105,7 +105,7 @@ CREATE TABLE IF NOT EXISTS public.signals (
     id uuid NOT NULL,
     user_id character varying NOT NULL,
     symbol character varying NOT NULL,
-    direction character varying NOT NULL,
+    direction character varying,
     entry_type character varying,
     entry_price double precision,
     stop_loss double precision,
@@ -124,3 +124,21 @@ ALTER TABLE ONLY public.signals
     ADD CONSTRAINT signals_pkey PRIMARY KEY (id);
 CREATE INDEX IF NOT EXISTS ix_signals_symbol ON public.signals USING btree (symbol);
 CREATE INDEX IF NOT EXISTS ix_signals_user_id ON public.signals USING btree (user_id);
+
+CREATE TABLE IF NOT EXISTS public.market_bars (
+    id uuid NOT NULL,
+    symbol character varying NOT NULL,
+    timeframe character varying NOT NULL,
+    timestamp timestamp with time zone NOT NULL,
+    open double precision NOT NULL,
+    high double precision NOT NULL,
+    low double precision NOT NULL,
+    close double precision NOT NULL,
+    volume double precision,
+    created_at timestamp with time zone
+);
+
+ALTER TABLE ONLY public.market_bars
+    ADD CONSTRAINT market_bars_pkey PRIMARY KEY (id);
+CREATE INDEX IF NOT EXISTS ix_market_bars_symbol_timeframe ON public.market_bars USING btree (symbol, timeframe);
+CREATE INDEX IF NOT EXISTS ix_market_bars_timestamp ON public.market_bars USING btree (timestamp);
