@@ -47,7 +47,7 @@ export default async function DashboardPage() {
           <PortfolioSummaryCards />
         </div>
 
-        <div className="mt-8 grid gap-6 md:grid-cols-4">
+        <div className="mt-8 grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
           <Link
             href="/portfolio"
             className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm hover:border-zinc-300"
@@ -74,11 +74,25 @@ export default async function DashboardPage() {
             <p className="mt-2 text-sm text-zinc-600">AI-generated trade setups en je goedkeuringen.</p>
           </Link>
           <Link
+            href="/allocate"
+            className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm hover:border-zinc-300"
+          >
+            <h3 className="font-semibold text-zinc-900">Portfoliobuilder</h3>
+            <p className="mt-2 text-sm text-zinc-600">Geef een budget en krijg een verdelingsadvies.</p>
+          </Link>
+          <Link
             href="/assistant"
             className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm hover:border-zinc-300"
           >
             <h3 className="font-semibold text-zinc-900">AI Assistant</h3>
             <p className="mt-2 text-sm text-zinc-600">Vraag over je portfolio en marktomstandigheden.</p>
+          </Link>
+          <Link
+            href="/settings/prompt"
+            className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm hover:border-zinc-300"
+          >
+            <h3 className="font-semibold text-zinc-900">AI Prompt</h3>
+            <p className="mt-2 text-sm text-zinc-600">Pas het prompt aan dat de AI gebruikt voor signalen.</p>
           </Link>
         </div>
       </main>

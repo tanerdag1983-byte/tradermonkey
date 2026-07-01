@@ -66,6 +66,14 @@ export async function executeSignal(id: string) {
   return apiFetch(`/signals/${id}/execute`, { method: "POST" });
 }
 
-export async function getBrokerStatus() {
-  return apiFetch("/broker/status");
+export async function getSystemPrompt() {
+  return apiFetch("/system/prompt");
+}
+
+export async function updateSystemPrompt(content: string) {
+  return apiFetch("/system/prompt", { method: "POST", body: JSON.stringify({ content }) });
+}
+
+export async function resetSystemPrompt() {
+  return apiFetch("/system/prompt", { method: "POST", body: JSON.stringify({ reset: true }) });
 }

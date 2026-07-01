@@ -4,6 +4,7 @@ from typing import List
 from app.database import get_db
 from app.dependencies.auth import get_current_user, SupabaseUser
 from app.models import Signal, Position, NewsItem
+from app.services.signal.portfolio_builder import generate_portfolio_allocation
 from app.services.signal.engine import generate_signal, generate_portfolio_summary
 from app.services.risk.engine import (
     calculate_atr_stop,
@@ -86,7 +87,79 @@ async def generate_signal_endpoint(
         )
         db.add(db_signal)
         db.commit()
-        return {"success": True, "data": signal}
+    return {"success": True, "data": signal}
+
+
+@router.post("/allocate")
+async def allocate_portfolio(
+    request: dict,
+    db: Session = Depends(get_db),
+    user: SupabaseUser = Depends(get_current_user),
+):
+    """
+    Given a budget and watchlist, ask the AI how to distribute the budget across stocks.
+    Request body example:
+    {
+      "budget": 1000,
+      "currency": "EUR",
+      "risk_profile": "moderate",
+      "watchlist": ["AAPL", "MSFT", "TSLA", "ASML"]
+    }
+    """
+    budget = float(request.get("budget", 0))
+    currency = request.get("currency", "EUR")
+    risk_profile = request.get("risk_profile", "moderate")
+    watchlist = request.get("watchlist", [])
+
+    if budget <= 0 or not watchlist:
+        return {"success": False, "error": "budget and watchlist are required"}
+
+    # Sync market data and build context for each symbol
+    watchlist_context = []
+    for symbol in watchlist:
+        symbol = str(symbol).upper()
+        sync_symbol_bars(db, symbol, timeframe="1d", lookback_days=90)
+        df = get_bars_as_df(db, symbol, timeframe="1d", limit=60)
+        market_context = build_market_context(df) if not df.empty else {"error": "no data"}
+
+        # Fetch latest news mentioning this symbol
+        news_items = db.query(NewsItem).filter(
+            NewsItem.title.ilike(f"%{symbol}%") | NewsItem.body.ilike(f"%{symbol}%")
+        ).order_by(NewsItem.published_at.desc()).limit(5).all()
+        news_summary = [
+            {"title": n.title, "published_at": n.published_at.isoformat() if n.published_at else None, "sentiment": n.sentiment_score}
+            for n in news_items
+        ]
+
+        watchlist_context.append({
+            "symbol": symbol,
+            "recent_close": market_context.get("last_price"),
+            "atr_14": market_context.get("atr_14"),
+            "rsi_14": market_context.get("rsi_14"),
+            "trend": market_context.get("trend"),
+            "support_levels": market_context.get("support_levels"),
+            "resistance_levels": market_context.get("resistance_levels"),
+            "candlestick_patterns": market_context.get("candlestick_patterns"),
+            "news_summary": news_summary,
+        })
+
+    # Determine a simple market regime from SPY/QQQ or AAPL as proxy
+    market_regime = "unknown"
+    spy_df = get_bars_as_df(db, "SPY", timeframe="1d", limit=20)
+    if not spy_df.empty:
+        from app.services.market.technical import build_market_context as build_ctx
+        spy_ctx = build_ctx(spy_df)
+        market_regime = spy_ctx.get("trend", "unknown")
+
+    result = await generate_portfolio_allocation(
+        budget=budget,
+        currency=currency,
+        risk_profile=risk_profile,
+        market_regime=market_regime,
+        watchlist=watchlist_context,
+    )
+
+    return {"success": True, "data": result}
 
     # Fetch recent news items mentioning this symbol
     news_items = db.query(NewsItem).filter(

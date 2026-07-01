@@ -3,7 +3,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import get_settings
 from app.database import engine, Base
-from app.routers import health, sync, news, signals, market, broker
+from app.routers import health, sync, news, signals, market, broker, system
 
 
 @asynccontextmanager
@@ -37,6 +37,7 @@ app.include_router(news.router)
 app.include_router(signals.router)
 app.include_router(market.router)
 app.include_router(broker.router)
+app.include_router(system.router)
 
 
 @app.get("/")

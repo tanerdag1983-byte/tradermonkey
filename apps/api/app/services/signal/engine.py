@@ -2,9 +2,10 @@ import json
 from typing import Dict, Any, List, Optional
 from datetime import datetime
 from app.services.llm.openrouter import OpenRouterClient
+from app.config import get_settings
 
 
-SIGNAL_PLANNER_PROMPT = """You are the Signal & Execution Planner for a regulated/risk-limited trading platform.
+DEFAULT_SIGNAL_PLANNER_PROMPT = """You are the Signal & Execution Planner for a regulated/risk-limited trading platform.
 
 GOAL
 - Analyze price action (candles, trend, support/resistance), news sentiment, and account state.
@@ -51,6 +52,19 @@ BASIC HEURISTICS
 """
 
 
+def get_signal_prompt_template() -> str:
+    """Return the active signal prompt template. Uses env var file override if set, otherwise default."""
+    settings = get_settings()
+    path = getattr(settings, "signal_prompt_override_path", None)
+    if path:
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                return f.read()
+        except Exception:
+            pass
+    return DEFAULT_SIGNAL_PLANNER_PROMPT
+
+
 def _build_prompt(
     request_id: str,
     portfolio: Dict[str, Any],
@@ -58,7 +72,8 @@ def _build_prompt(
     market_state: Dict[str, Any],
     sources: List[Dict[str, Any]],
 ) -> str:
-    return SIGNAL_PLANNER_PROMPT.format(
+    template = get_signal_prompt_template()
+    return template.format(
         request_id=request_id,
         portfolio=json.dumps(portfolio, default=str),
         broker=json.dumps(broker, default=str),
