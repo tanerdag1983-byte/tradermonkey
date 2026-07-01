@@ -62,6 +62,12 @@ def fetch_bars_from_yahoo(
     else:
         df["timestamp"] = datetime.utcnow()
 
+    df["timestamp"] = pd.to_datetime(df["timestamp"]).dt.tz_localize(None)
+    df = df.sort_values("timestamp").reset_index(drop=True)
+
+    # Deduplicate by timestamp to avoid lightweight-charts errors
+    df = df.drop_duplicates(subset=["symbol", "timeframe", "timestamp"], keep="last")
+
     return df[["symbol", "timeframe", "timestamp", "open", "high", "low", "close", "volume"]]
 
 
