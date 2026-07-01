@@ -161,8 +161,34 @@ async def generate_signal_endpoint(
 
     signal = await generate_signal(symbol, portfolio, broker, market_state, sources)
 
-    # Fill risk details if TRADE_INTENT
-    if signal.get("status") == "TRADE_INTENT":
+    # Normalize and fill risk details for actionable intents
+    if signal.get("status") == "TRADE_INTENT" and signal.get("direction"):
+        direction = signal["direction"]
+        entry_price = (
+            signal.get("entry_price")
+            or signal.get("risk", {}).get("entry_price")
+            or market_state["last_price"]
+        )
+        stop_loss = (
+            signal.get("stop_loss")
+            or signal.get("risk", {}).get("stop_loss")
+            or calculate_atr_stop(entry_price, market_state["atr_14"], direction, multiplier=1.5)
+        )
+        take_profit = (
+            signal.get("take_profit")
+            or signal.get("risk", {}).get("take_profit")
+            or calculate_take_profits(entry_price, stop_loss, direction)
+        )
+
+        signal["entry_price"] = entry_price
+        signal["stop_loss"] = stop_loss
+        signal["take_profit"] = take_profit
+        signal.setdefault("risk", {})
+        signal["risk"]["entry_type"] = signal.get("risk", {}).get("entry_type") or "market"
+        signal["risk"]["entry_price"] = entry_price
+        signal["risk"]["stop_loss"] = stop_loss
+        signal["risk"]["take_profit"] = take_profit
+
         signal = validate_signal_against_risk(
             signal,
             portfolio_value=portfolio_value or 50000,
