@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 interface HealthData {
   status: string;
   version: string;
+  app_name?: string;
   environment: string;
   timestamp: string;
 }

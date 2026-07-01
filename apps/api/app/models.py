@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 from sqlalchemy import Column, String, Float, Integer, Boolean, DateTime, Text, JSON
-from sqlalchemy.dialects.postgresql import UUID, VECTOR
+from sqlalchemy.dialects.postgresql import UUID
 from app.database import Base
 
 
@@ -92,7 +92,7 @@ class NewsItem(Base):
     published_at = Column(DateTime(timezone=True), nullable=True)
     sentiment_score = Column(Float, nullable=True)
     entities = Column(JSON, nullable=True)
-    embedding = Column(VECTOR(768), nullable=True)
+    embedding = Column(JSON, nullable=True)
     url = Column(Text, nullable=True)
     fetched_at = Column(DateTime(timezone=True), default=datetime.utcnow)
 

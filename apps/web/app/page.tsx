@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import HealthCheck from "@/components/health-check";
+import PortfolioSummaryCards from "@/components/portfolio-summary";
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -41,6 +42,10 @@ export default async function DashboardPage() {
         </div>
 
         <HealthCheck />
+
+        <div className="mt-8">
+          <PortfolioSummaryCards />
+        </div>
 
         <div className="mt-8 grid gap-6 md:grid-cols-3">
           <Link
