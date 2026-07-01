@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { getSignals, generateSignal, approveSignal, rejectSignal, executeSignal, getBrokerStatus } from "@/lib/supabase/api";
+import MarketChart from "@/components/market-chart";
 
 interface SignalItem {
   id: string;
@@ -153,6 +154,11 @@ export default function SignalsPage() {
             {error}
           </div>
         )}
+
+        <div className="mb-8 rounded-xl border border-zinc-200 bg-white p-5 shadow-sm">
+          <h3 className="mb-3 text-sm font-medium text-zinc-700">Grafiek {symbol}</h3>
+          <MarketChart symbol={symbol} />
+        </div>
 
         <div className="space-y-4">
           {signals.length === 0 && !loading && (
