@@ -142,3 +142,4 @@ ALTER TABLE ONLY public.market_bars
     ADD CONSTRAINT market_bars_pkey PRIMARY KEY (id);
 CREATE INDEX IF NOT EXISTS ix_market_bars_symbol_timeframe ON public.market_bars USING btree (symbol, timeframe);
 CREATE INDEX IF NOT EXISTS ix_market_bars_timestamp ON public.market_bars USING btree (timestamp);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_market_bars_unique ON public.market_bars (symbol, timeframe, timestamp);

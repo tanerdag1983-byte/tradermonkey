@@ -71,27 +71,15 @@ def fetch_bars_from_yahoo(
     return df[["symbol", "timeframe", "timestamp", "open", "high", "low", "close", "volume"]]
 
 
+from sqlalchemy.exc import IntegrityError
+
 def save_bars_to_db(db: Session, df: pd.DataFrame) -> int:
     """Upsert bars into the database. Returns number of bars saved."""
     if df.empty:
         return 0
 
-    # Fetch existing keys to avoid duplicates
-    symbols = df["symbol"].unique().tolist()
-    timeframes = df["timeframe"].unique().tolist()
-    existing = {
-        (row.symbol, row.timeframe, row.timestamp)
-        for row in db.query(MarketBar).filter(
-            MarketBar.symbol.in_(symbols),
-            MarketBar.timeframe.in_(timeframes),
-        ).all()
-    }
-
     saved = 0
     for _, row in df.iterrows():
-        key = (row["symbol"], row["timeframe"], row["timestamp"])
-        if key in existing:
-            continue
         bar = MarketBar(
             symbol=row["symbol"],
             timeframe=row["timeframe"],
@@ -103,7 +91,11 @@ def save_bars_to_db(db: Session, df: pd.DataFrame) -> int:
             volume=float(row["volume"]) if pd.notna(row["volume"]) else None,
         )
         db.add(bar)
-        saved += 1
+        try:
+            db.flush()
+            saved += 1
+        except IntegrityError:
+            db.rollback()
 
     db.commit()
     return saved
