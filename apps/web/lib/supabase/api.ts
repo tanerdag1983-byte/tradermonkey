@@ -41,3 +41,19 @@ export async function ingestNews() {
 export async function getNewsFeed(limit: number = 50) {
   return apiFetch(`/news/feed?limit=${limit}`);
 }
+
+export async function getSignals() {
+  return apiFetch("/signals/feed");
+}
+
+export async function generateSignal(symbol: string) {
+  return apiFetch(`/signals/generate/${symbol}`, { method: "POST" });
+}
+
+export async function approveSignal(id: string) {
+  return apiFetch(`/signals/${id}/approve`, { method: "POST" });
+}
+
+export async function rejectSignal(id: string) {
+  return apiFetch(`/signals/${id}/reject`, { method: "POST" });
+}
