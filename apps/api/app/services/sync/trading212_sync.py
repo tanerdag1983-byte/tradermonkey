@@ -29,16 +29,21 @@ def _get_or_create_broker(db: Session, user_id: str, config: BrokerConfig) -> Br
     return broker
 
 
+import httpx
+
 async def sync_account_summary(db: Session, broker: Broker) -> Dict[str, Any]:
     client = Trading212Client(
         api_key=broker.api_key_encrypted,
         api_secret=broker.api_secret_encrypted,
         base_url="https://demo.trading212.com" if broker.is_demo else "https://live.trading212.com",
     )
-    summary = await client.get_account_summary()
-    broker.last_synced_at = datetime.utcnow()
-    db.commit()
-    return summary
+    try:
+        summary = await client.get_account_summary()
+        broker.last_synced_at = datetime.utcnow()
+        db.commit()
+        return summary
+    except httpx.HTTPStatusError as e:
+        return {"error": f"Trading 212 API error: HTTP {e.response.status_code}. Check your API keys and accept the risk warning in T212 settings."}
 
 
 async def sync_positions(db: Session, broker: Broker) -> Dict[str, Any]:
@@ -185,6 +190,9 @@ async def sync_all(db: Session, user_id: str, config: Optional[BrokerConfig] = N
         return {"error": "No active broker found"}
 
     summary = await sync_account_summary(db, broker)
+    if "error" in summary:
+        return {"error": summary["error"]}
+
     positions = await sync_positions(db, broker)
     orders = await sync_orders(db, broker)
 

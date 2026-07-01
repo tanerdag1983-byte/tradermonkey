@@ -1,7 +1,7 @@
 import base64
 from typing import Optional, Dict, Any
 import httpx
-from tenacity import retry, stop_after_attempt, wait_exponential
+from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 from app.config import get_settings
 
 
@@ -24,7 +24,12 @@ class Trading212Client:
     def _url(self, path: str) -> str:
         return f"{self.base_url}{path}"
 
-    @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=2, max=10))
+    @retry(
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=1, min=2, max=10),
+        retry=retry_if_exception_type((httpx.RequestError, httpx.TimeoutException)),
+        reraise=True,
+    )
     async def request(self, method: str, path: str, **kwargs) -> Dict[str, Any]:
         async with httpx.AsyncClient(timeout=30.0) as client:
             response = await client.request(
