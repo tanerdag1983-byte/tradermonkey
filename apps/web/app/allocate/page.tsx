@@ -74,7 +74,7 @@ export default function AllocatePage() {
                 type="number"
                 value={budget}
                 onChange={(e) => setBudget(Number(e.target.value))}
-                className="mt-1 block w-full rounded-lg border border-zinc-300 px-3 py-2"
+                className="mt-1 block w-full rounded-lg border border-zinc-300 px-3 py-2 text-zinc-900"
                 min={1}
               />
             </div>
@@ -83,7 +83,7 @@ export default function AllocatePage() {
               <select
                 value={currency}
                 onChange={(e) => setCurrency(e.target.value)}
-                className="mt-1 block w-full rounded-lg border border-zinc-300 px-3 py-2"
+                className="mt-1 block w-full rounded-lg border border-zinc-300 px-3 py-2 text-zinc-900"
               >
                 <option value="EUR">EUR</option>
                 <option value="USD">USD</option>
@@ -96,7 +96,7 @@ export default function AllocatePage() {
             <select
               value={riskProfile}
               onChange={(e) => setRiskProfile(e.target.value)}
-              className="mt-1 block w-full rounded-lg border border-zinc-300 px-3 py-2"
+              className="mt-1 block w-full rounded-lg border border-zinc-300 px-3 py-2 text-zinc-900"
             >
               <option value="conservative">Conservatief</option>
               <option value="moderate">Gemiddeld</option>
@@ -110,7 +110,7 @@ export default function AllocatePage() {
               type="text"
               value={watchlistInput}
               onChange={(e) => setWatchlistInput(e.target.value)}
-              className="mt-1 block w-full rounded-lg border border-zinc-300 px-3 py-2"
+              className="mt-1 block w-full rounded-lg border border-zinc-300 px-3 py-2 text-zinc-900"
             />
           </div>
 
