@@ -224,16 +224,20 @@ function SignalCard({
         {signal.analysis?.thesis || "Geen analyse beschikbaar."}
       </div>
 
-      {(signal.analysis?.invalidation_conditions as string[] | undefined)?.length > 0 && (
-        <div className="mb-4 text-xs text-zinc-500">
-          <p className="font-medium text-zinc-600 mb-1">Invalidatie:</p>
-          <ul className="list-disc ml-4 space-y-0.5">
-            {(signal.analysis.invalidation_conditions as string[]).map((c, i) => (
-              <li key={i}>{c}</li>
-            ))}
-          </ul>
-        </div>
-      )}
+      {(() => {
+        const inv = signal.analysis?.invalidation_conditions;
+        const conditions: string[] = Array.isArray(inv) ? inv : inv ? [String(inv)] : [];
+        return conditions.length > 0 ? (
+          <div className="mb-4 text-xs text-zinc-500">
+            <p className="font-medium text-zinc-600 mb-1">Invalidatie:</p>
+            <ul className="list-disc ml-4 space-y-0.5">
+              {conditions.map((c, i) => (
+                <li key={i}>{c}</li>
+              ))}
+            </ul>
+          </div>
+        ) : null;
+      })()}
 
       {isTradeIntent && signal.status === "generated" && (
         <div className="flex gap-3">
