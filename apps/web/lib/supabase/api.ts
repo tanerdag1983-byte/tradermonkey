@@ -57,3 +57,11 @@ export async function approveSignal(id: string) {
 export async function rejectSignal(id: string) {
   return apiFetch(`/signals/${id}/reject`, { method: "POST" });
 }
+
+export async function executeSignal(id: string) {
+  return apiFetch(`/signals/${id}/execute`, { method: "POST" });
+}
+
+export async function getBrokerStatus() {
+  return apiFetch("/broker/status");
+}

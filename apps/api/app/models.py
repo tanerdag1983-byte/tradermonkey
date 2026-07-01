@@ -43,7 +43,7 @@ class Order(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     user_id = Column(String, nullable=False, index=True)
-    broker_id = Column(UUID(as_uuid=True), nullable=False, index=True)
+    broker_id = Column(UUID(as_uuid=True), nullable=True, index=True)
     broker_order_id = Column(String, nullable=True, index=True)
     symbol = Column(String, nullable=False, index=True)
     direction = Column(String, nullable=False)  # BUY / SELL

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { getSignals, generateSignal, approveSignal, rejectSignal } from "@/lib/supabase/api";
+import { getSignals, generateSignal, approveSignal, rejectSignal, executeSignal, getBrokerStatus } from "@/lib/supabase/api";
 
 interface SignalItem {
   id: string;
@@ -22,13 +22,15 @@ export default function SignalsPage() {
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [broker, setBroker] = useState<{ broker?: { name: string; mode: string }; success?: boolean; error?: string } | null>(null);
 
   const loadSignals = async () => {
     try {
-      const result = await getSignals();
-      if (result.success) {
-        setSignals(result.data);
+      const [signalsResult, brokerResult] = await Promise.all([getSignals(), getBrokerStatus()]);
+      if (signalsResult.success) {
+        setSignals(signalsResult.data);
       }
+      setBroker(brokerResult);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load signals");
     } finally {
@@ -72,6 +74,22 @@ export default function SignalsPage() {
     }
   };
 
+  const handleExecute = async (id: string) => {
+    setError(null);
+    try {
+      const result = await executeSignal(id);
+      if (!result.success) {
+        setError(result.error || "Execution failed");
+      }
+      await loadSignals();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Execution failed");
+    }
+  };
+
+  const brokerMode = broker?.broker?.mode || "none";
+  const brokerName = broker?.broker?.name || "none";
+
   useEffect(() => {
     loadSignals();
   }, []);
@@ -88,9 +106,14 @@ export default function SignalsPage() {
               <h1 className="text-xl font-bold text-zinc-900">TraderMonkeys</h1>
             </Link>
           </div>
-          <Link href="/" className="text-sm font-medium text-zinc-600 hover:text-zinc-900">
-            Terug naar dashboard
-          </Link>
+          <div className="flex items-center gap-4">
+            <span className={`rounded-full px-3 py-1 text-xs font-medium capitalize ${brokerMode === "paper" ? "bg-blue-100 text-blue-700" : brokerMode === "live" ? "bg-red-100 text-red-700" : "bg-zinc-100 text-zinc-600"}`}>
+              {brokerName} {brokerMode}
+            </span>
+            <Link href="/" className="text-sm font-medium text-zinc-600 hover:text-zinc-900">
+              Terug naar dashboard
+            </Link>
+          </div>
         </div>
       </header>
 
@@ -141,6 +164,7 @@ export default function SignalsPage() {
               signal={signal}
               onApprove={() => handleApprove(signal.id)}
               onReject={() => handleReject(signal.id)}
+              onExecute={() => handleExecute(signal.id)}
             />
           ))}
         </div>
@@ -159,10 +183,12 @@ function SignalCard({
   signal,
   onApprove,
   onReject,
+  onExecute,
 }: {
   signal: SignalItem;
   onApprove: () => void;
   onReject: () => void;
+  onExecute: () => void;
 }) {
   const status = signal.analysis?.status as string | undefined;
   const isTradeIntent = status === "TRADE_INTENT";
@@ -246,6 +272,23 @@ function SignalCard({
             className="rounded-lg bg-green-600 px-4 py-2 text-sm font-semibold text-white hover:bg-green-700"
           >
             Goedkeuren
+          </button>
+          <button
+            onClick={onReject}
+            className="rounded-lg border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50"
+          >
+            Afwijzen
+          </button>
+        </div>
+      )}
+
+      {isTradeIntent && signal.status === "approved" && (
+        <div className="flex gap-3">
+          <button
+            onClick={onExecute}
+            className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
+          >
+            Uitvoeren (paper)
           </button>
           <button
             onClick={onReject}

@@ -20,6 +20,10 @@ class Settings(BaseSettings):
     t212_api_secret: str = ""
     t212_base_url: str = "https://demo.trading212.com"
 
+    alpaca_api_key: str = ""
+    alpaca_secret_key: str = ""
+    alpaca_base_url: str = "https://paper-api.alpaca.markets"
+
     openrouter_api_key: str = ""
     openrouter_base_url: str = "https://openrouter.ai/api/v1"
 

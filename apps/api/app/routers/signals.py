@@ -14,6 +14,8 @@ from app.services.risk.engine import (
 from app.services.market.data import sync_symbol_bars, get_bars_as_df
 from app.services.market.technical import build_market_context
 
+from app.services.execution.engine import execute_signal, get_active_broker
+
 router = APIRouter(prefix="/signals", tags=["signals"])
 
 
@@ -286,3 +288,18 @@ async def reject_signal(
     signal.status = "rejected"
     db.commit()
     return {"success": True, "data": {"id": signal_id, "status": "rejected"}}
+
+
+@router.post("/{signal_id}/execute")
+async def execute_approved_signal(
+    signal_id: str,
+    db: Session = Depends(get_db),
+    user: SupabaseUser = Depends(get_current_user),
+):
+    """Execute an approved signal against the configured broker (Alpaca paper by default)."""
+    signal = db.query(Signal).filter(Signal.id == signal_id, Signal.user_id == user.id).first()
+    if not signal:
+        return {"success": False, "error": "Signal not found"}
+
+    result = await execute_signal(db, signal, user.id)
+    return result

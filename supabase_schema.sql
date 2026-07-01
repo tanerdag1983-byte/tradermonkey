@@ -57,7 +57,7 @@ CREATE INDEX IF NOT EXISTS ix_news_items_source_class ON public.news_items USING
 CREATE TABLE IF NOT EXISTS public.orders (
     id uuid NOT NULL,
     user_id character varying NOT NULL,
-    broker_id uuid NOT NULL,
+    broker_id uuid,
     broker_order_id character varying,
     symbol character varying NOT NULL,
     direction character varying NOT NULL,
