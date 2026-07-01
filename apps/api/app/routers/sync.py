@@ -4,6 +4,7 @@ from app.database import get_db
 from app.dependencies.auth import get_current_user, SupabaseUser
 from app.schemas import BrokerConfig
 from app.services.sync.trading212_sync import sync_all, sync_positions, sync_orders, _get_or_create_broker
+from app.services.sync.alpaca_sync import sync_alpaca_all
 from app.models import Broker, Position, Order
 from app.config import get_settings
 
@@ -127,3 +128,12 @@ async def get_portfolio(
             },
         },
     }
+
+
+@router.post("/alpaca/all")
+async def sync_alpaca_endpoint(
+    db: Session = Depends(get_db),
+    user: SupabaseUser = Depends(get_current_user),
+):
+    result = await sync_alpaca_all(db, user.id)
+    return _response(result)

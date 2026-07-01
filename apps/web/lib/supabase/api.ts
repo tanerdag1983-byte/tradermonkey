@@ -34,6 +34,10 @@ export async function getPortfolio() {
   return apiFetch("/sync/portfolio");
 }
 
+export async function syncAlpacaPortfolio() {
+  return apiFetch("/sync/alpaca/all", { method: "POST" });
+}
+
 export async function ingestNews() {
   return apiFetch("/news/ingest", { method: "POST" });
 }
