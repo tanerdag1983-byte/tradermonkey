@@ -61,7 +61,7 @@ export default function MarketChart({ symbol }: { symbol: string }) {
           },
         });
 
-        const candlestickSeries = chart.addCandlestickSeries({
+        const candlestickSeries = chart.addSeries(lightweightCharts.CandlestickSeries, {
           upColor: "#16a34a",
           downColor: "#dc2626",
           borderUpColor: "#16a34a",
