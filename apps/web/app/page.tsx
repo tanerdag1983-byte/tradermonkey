@@ -47,7 +47,7 @@ export default async function DashboardPage() {
           <PortfolioSummaryCards />
         </div>
 
-        <div className="mt-8 grid gap-6 md:grid-cols-3">
+        <div className="mt-8 grid gap-6 md:grid-cols-4">
           <Link
             href="/portfolio"
             className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm hover:border-zinc-300"
@@ -55,6 +55,15 @@ export default async function DashboardPage() {
             <h3 className="font-semibold text-zinc-900">Portfolio</h3>
             <p className="mt-2 text-sm text-zinc-600">
               Bekijk je posities, P&L en lopende orders.
+            </p>
+          </Link>
+          <Link
+            href="/news"
+            className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm hover:border-zinc-300"
+          >
+            <h3 className="font-semibold text-zinc-900">Nieuws & Sentiment</h3>
+            <p className="mt-2 text-sm text-zinc-600">
+              SEC filings, finance feeds en AI-sentiment.
             </p>
           </Link>
           <Link

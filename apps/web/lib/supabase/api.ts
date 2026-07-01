@@ -33,3 +33,11 @@ export async function syncPortfolio() {
 export async function getPortfolio() {
   return apiFetch("/sync/portfolio");
 }
+
+export async function ingestNews() {
+  return apiFetch("/news/ingest", { method: "POST" });
+}
+
+export async function getNewsFeed(limit: number = 50) {
+  return apiFetch(`/news/feed?limit=${limit}`);
+}
