@@ -113,6 +113,12 @@ class MarketBar(Base):
 
     __table_args__ = (
         # Ensure unique bars per symbol/timeframe/timestamp
+        UniqueConstraint(
+            "symbol",
+            "timeframe",
+            "timestamp",
+            name="uix_market_bars_symbol_timeframe_timestamp",
+        ),
         {"comment": "OHLCV market bars"},
     )
 

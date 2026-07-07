@@ -3,7 +3,7 @@ import logging
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import get_settings
-from app.database import engine, Base
+from app.database import engine, Base, ensure_constraints
 from app.routers import health, sync, news, signals, market, broker, system, scheduler, research
 from app.services.scheduler import build_scheduler
 
@@ -15,6 +15,8 @@ async def lifespan(app: FastAPI):
     settings = get_settings()
     # Ensure all tables exist in both development and production
     Base.metadata.create_all(bind=engine)
+    # Apply constraints that create_all() leaves out on existing tables
+    ensure_constraints()
 
     if settings.enable_scheduler:
         logger.info("Scheduler is enabled; building and starting APScheduler jobs")
