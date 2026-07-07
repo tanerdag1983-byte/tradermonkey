@@ -27,7 +27,7 @@ export async function apiFetch(path: string, options: RequestInit = {}) {
 }
 
 export async function syncPortfolio() {
-  return apiFetch("/sync/all", { method: "POST" });
+  return apiFetch("/sync/alpaca/all", { method: "POST" });
 }
 
 export async function getPortfolio() {

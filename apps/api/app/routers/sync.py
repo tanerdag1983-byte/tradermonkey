@@ -18,22 +18,16 @@ def _response(data: dict):
 
 
 def _ensure_broker(db: Session, user: SupabaseUser):
-    broker = db.query(Broker).filter(
+    # Trading212 is no longer auto-provisioned. Only return an existing active broker.
+    return db.query(Broker).filter(
         Broker.user_id == user.id,
         Broker.is_active == True,
     ).first()
 
-    if not broker:
-        settings = get_settings()
-        if settings.t212_api_key and settings.t212_api_secret:
-            broker = _get_or_create_broker(db, user.id, BrokerConfig(
-                broker_name="trading212",
-                is_demo=settings.t212_base_url == "https://demo.trading212.com",
-                api_key=settings.t212_api_key,
-                api_secret=settings.t212_api_secret,
-            ))
 
-    return broker
+def _alpaca_configured() -> bool:
+    settings = get_settings()
+    return bool(settings.alpaca_api_key and settings.alpaca_secret_key)
 
 
 @router.post("/all")
@@ -41,11 +35,19 @@ async def sync_all_endpoint(
     db: Session = Depends(get_db),
     user: SupabaseUser = Depends(get_current_user),
 ):
+    # Prefer Alpaca paper trading when keys are configured; fall back to legacy broker sync.
+    if _alpaca_configured():
+        result = await sync_alpaca_all(db, user.id)
+        return _response(result)
+
     broker = _ensure_broker(db, user)
     if not broker:
-        return {"success": False, "error": "No active broker found and no T212 env vars configured"}
+        return {"success": False, "error": "No active broker found"}
 
-    result = await sync_all(db, user.id)
+    if broker.broker_name == "alpaca":
+        result = await sync_alpaca_all(db, user.id)
+    else:
+        result = await sync_all(db, user.id)
     return _response(result)
 
 
@@ -59,7 +61,7 @@ async def sync_positions_endpoint(
 
     broker = _ensure_broker(db, user)
     if not broker:
-        return {"success": False, "error": "No active broker found and no T212 env vars configured"}
+        return {"success": False, "error": "No active broker found"}
 
     result = await sync_positions(db, broker)
     return _response(result)
@@ -74,7 +76,7 @@ async def sync_orders_endpoint(
 
     broker = _ensure_broker(db, user)
     if not broker:
-        return {"success": False, "error": "No active broker found and no T212 env vars configured"}
+        return {"success": False, "error": "No active broker found"}
 
     result = await sync_orders(db, broker)
     return _response(result)
