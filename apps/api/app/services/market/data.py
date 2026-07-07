@@ -7,6 +7,7 @@ import yfinance as yf
 import pandas as pd
 from sqlalchemy.orm import Session
 from sqlalchemy.dialects.postgresql import insert
+from yfinance.exceptions import YFRateLimitError
 
 from app.models import MarketBar
 from app.config import get_settings
@@ -137,7 +138,14 @@ def fetch_bars_from_yahoo(
 
     # Map rough lookback to period string acceptable by yfinance.
     period = f"{max(lookback_days, 7)}d"
-    df = ticker_obj.history(period=period, interval=timeframe)
+    try:
+        df = ticker_obj.history(period=period, interval=timeframe)
+    except YFRateLimitError:
+        logger.warning("Yahoo Finance rate limit reached for %s; skipping.", ticker)
+        return pd.DataFrame()
+    except Exception as exc:
+        logger.warning("Yahoo Finance fetch failed for %s: %s", ticker, exc)
+        return pd.DataFrame()
 
     if df is None or df.empty:
         logger.warning("No bars returned by Yahoo Finance for %s", ticker)
