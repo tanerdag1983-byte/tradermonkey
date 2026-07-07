@@ -20,7 +20,7 @@ async def send_email(
     """
     settings = get_settings()
     api_key = settings.resend_api_key
-    from_email = settings.notification_from_email or "noreply@tradermonkeys.app"
+    from_email = settings.notification_from_email or "onboarding@resend.dev"
 
     if not api_key or not to_email:
         logger.info(

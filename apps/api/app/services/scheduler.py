@@ -118,9 +118,17 @@ async def trigger_research_generation_now() -> dict:
     return {"success": True, "message": "Research generation triggered"}
 
 
-async def send_research_digest_job():
-    """Scheduled job to email the latest research digest to the admin address."""
+async def send_research_digest_job(force: bool = False):
+    """Scheduled job to email the latest research digest to the admin address.
+
+    Args:
+        force: When True, send even if ENABLE_EMAIL_DIGEST is false. Used by the manual trigger endpoint.
+    """
     settings = get_settings()
+    if not force and not getattr(settings, "enable_email_digest", False):
+        logger.info("[scheduler] Digest job skipped: ENABLE_EMAIL_DIGEST is not true")
+        return
+
     admin_email = getattr(settings, "admin_email", "")
     if not admin_email or not getattr(settings, "resend_api_key", ""):
         logger.info("[scheduler] Digest job skipped: ADMIN_EMAIL or RESEND_API_KEY not set")
@@ -170,7 +178,7 @@ async def send_research_digest_job():
 
 
 async def trigger_research_digest_now() -> dict:
-    await send_research_digest_job()
+    await send_research_digest_job(force=True)
     return {"success": True, "message": "Research digest triggered"}
 
 
