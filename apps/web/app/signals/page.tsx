@@ -5,6 +5,12 @@ import Link from "next/link";
 import { getSignals, generateSignal, approveSignal, rejectSignal, executeSignal, getBrokerStatus } from "@/lib/supabase/api";
 import MarketChart from "@/components/market-chart";
 
+interface SignalAnalysis {
+  status?: string;
+  thesis?: string;
+  invalidation_conditions?: string[] | string;
+}
+
 interface SignalItem {
   id: string;
   symbol: string;
@@ -14,7 +20,7 @@ interface SignalItem {
   confidence: number | null;
   status: string;
   generated_at: string;
-  analysis: any;
+  analysis: SignalAnalysis | null;
 }
 
 export default function SignalsPage() {

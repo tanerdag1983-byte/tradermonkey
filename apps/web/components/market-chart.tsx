@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
+import type { IChartApi, ISeriesApi } from "lightweight-charts";
 import { apiFetch } from "@/lib/supabase/api";
 
 interface MarketBar {
@@ -15,13 +15,18 @@ interface MarketBar {
 
 export default function MarketChart({ symbol }: { symbol: string }) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const chartRef = useRef<any>(null);
-  const seriesRef = useRef<any>(null);
+  const chartRef = useRef<IChartApi | null>(null);
+  const seriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let isCancelled = false;
+    const handleResize = () => {
+      if (containerRef.current && chartRef.current) {
+        chartRef.current.applyOptions({ width: containerRef.current.clientWidth });
+      }
+    };
 
     const load = async () => {
       try {
@@ -84,11 +89,6 @@ export default function MarketChart({ symbol }: { symbol: string }) {
         chartRef.current = chart;
         seriesRef.current = candlestickSeries;
 
-        const handleResize = () => {
-          if (containerRef.current && chartRef.current) {
-            chartRef.current.applyOptions({ width: containerRef.current.clientWidth });
-          }
-        };
         window.addEventListener("resize", handleResize);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Fout bij laden grafiek");
@@ -105,7 +105,7 @@ export default function MarketChart({ symbol }: { symbol: string }) {
         chartRef.current.remove();
         chartRef.current = null;
       }
-      window.removeEventListener("resize", () => {});
+      window.removeEventListener("resize", handleResize);
     };
   }, [symbol]);
 

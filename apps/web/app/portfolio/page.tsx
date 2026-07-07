@@ -148,7 +148,7 @@ export default function PortfolioPage() {
           <section className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm">
             <h3 className="mb-4 text-lg font-semibold text-zinc-900">Posities</h3>
             {positions.length === 0 ? (
-              <p className="text-sm text-zinc-500">Geen posities gevonden. Klik op "Nu syncen".</p>
+              <p className="text-sm text-zinc-500">Geen posities gevonden. Klik op &quot;Nu syncen&quot;.</p>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">

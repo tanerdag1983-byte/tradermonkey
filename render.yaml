@@ -59,3 +59,14 @@ services:
         sync: false
       - key: ALPACA_SECRET_KEY
         sync: false
+      - key: ALPACA_BASE_URL
+        value: https://paper-api.alpaca.markets
+      # Email digest notifications
+      - key: RESEND_API_KEY
+        sync: false
+      - key: NOTIFICATION_FROM_EMAIL
+        value: onboarding@resend.dev
+      - key: ADMIN_EMAIL
+        sync: false
+      - key: ENABLE_EMAIL_DIGEST
+        value: "true"

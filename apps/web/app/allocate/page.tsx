@@ -22,7 +22,7 @@ export default function AllocatePage() {
   const [riskProfile, setRiskProfile] = useState("moderate");
   const [watchlistInput, setWatchlistInput] = useState("AAPL, MSFT, TSLA, ASML, NVDA");
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<{ allocations?: Allocation[]; summary?: any; error?: string } | null>(null);
+  const [result, setResult] = useState<{ allocations?: Allocation[]; summary?: { total_allocated?: number; cash_remaining?: number }; error?: string } | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

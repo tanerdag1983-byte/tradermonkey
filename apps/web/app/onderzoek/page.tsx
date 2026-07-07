@@ -169,7 +169,7 @@ const handleGenerate = async () => {
   const handleStatusUpdate = async (proposalId: string, newStatus: "approved" | "rejected") => {
     setUpdatingProposal(proposalId);
     try {
-      const result = await updateProposalStatus(proposalId, newStatus);
+      await updateProposalStatus(proposalId, newStatus);
       // Update local state
       if (newStatus === "approved" || newStatus === "rejected") {
         // Update allocated

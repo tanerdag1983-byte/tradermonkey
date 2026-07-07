@@ -12,10 +12,6 @@ export default function PromptSettingsPage() {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
-  useEffect(() => {
-    loadPrompt();
-  }, []);
-
   const loadPrompt = async () => {
     try {
       setLoading(true);
@@ -33,6 +29,10 @@ export default function PromptSettingsPage() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    loadPrompt();
+  }, []);
 
   const handleSave = async () => {
     setSaving(true);

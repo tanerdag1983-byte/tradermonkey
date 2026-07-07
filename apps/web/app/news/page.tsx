@@ -110,7 +110,7 @@ export default function NewsPage() {
 
         <div className="space-y-4">
           {items.length === 0 && !loading && (
-            <p className="text-sm text-zinc-500">Nog geen nieuws. Klik op "Haal nieuws op".</p>
+            <p className="text-sm text-zinc-500">Nog geen nieuws. Klik op &quot;Haal nieuws op&quot;.</p>
           )}
           {items.map((item) => (
             <article
