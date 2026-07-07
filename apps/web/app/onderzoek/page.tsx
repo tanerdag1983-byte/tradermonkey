@@ -9,6 +9,9 @@ import {
   getResearchSectors,
   updateProposalStatus,
 } from "@/lib/supabase/api";
+import AppHeader from "@/components/app-header";
+import ProposalCard, { ProposalView } from "@/components/proposal-card";
+import { Brain, Cpu, Sparkles, Loader2, AlertCircle, Settings, ArrowRight } from "lucide-react";
 
 interface StoredProposal {
   id: string;
@@ -122,7 +125,8 @@ export default function OnderzoekPage() {
       prev.includes(sector) ? prev.filter((s) => s !== sector) : [...prev, sector]
     );
   };
-const handleGenerate = async () => {
+
+  const handleGenerate = async () => {
     setError(null);
     const watchlist = watchlistInput
       .split(",")
@@ -170,21 +174,15 @@ const handleGenerate = async () => {
     setUpdatingProposal(proposalId);
     try {
       await updateProposalStatus(proposalId, newStatus);
-      // Update local state
-      if (newStatus === "approved" || newStatus === "rejected") {
-        // Update allocated
-        setAllocated((prev) =>
-          prev.map((p) => (p.id === proposalId ? { ...p, status: newStatus } : p))
-        );
-        // Update alsoInteresting
-        setAlsoInteresting((prev) =>
-          prev.map((p) => (p.id === proposalId ? { ...p, status: newStatus } : p))
-        );
-        // Update storedProposals
-        setStoredProposals((prev) =>
-          prev.map((p) => (p.id === proposalId ? { ...p, status: newStatus } : p))
-        );
-      }
+      setAllocated((prev) =>
+        prev.map((p) => (p.id === proposalId ? { ...p, status: newStatus } : p))
+      );
+      setAlsoInteresting((prev) =>
+        prev.map((p) => (p.id === proposalId ? { ...p, status: newStatus } : p))
+      );
+      setStoredProposals((prev) =>
+        prev.map((p) => (p.id === proposalId ? { ...p, status: newStatus } : p))
+      );
     } catch (err) {
       setError(err instanceof Error ? err.message : "Status update mislukt");
     } finally {
@@ -200,159 +198,200 @@ const handleGenerate = async () => {
   const formatCurrency = (value: number | null | undefined, curr = currency) =>
     value !== null && value !== undefined ? `${value.toFixed(2)} ${curr}` : "—";
 
+  const budgetNum = Number(budget) || 1;
+  const allocatedRatio = allocationSummary
+    ? Math.min(100, (allocationSummary.total_allocated / budgetNum) * 100)
+    : 0;
+
   return (
-    <div className="min-h-full bg-zinc-50">
-      <header className="border-b border-zinc-200 bg-white">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
-          <div className="flex items-center gap-3">
-            <Link href="/" className="flex items-center gap-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-zinc-900 text-white font-bold">
-                TM
-              </div>
-              <h1 className="text-xl font-bold text-zinc-900">TraderMonkeys</h1>
-            </Link>
-          </div>
-          <div className="flex items-center gap-4">
-            <Link
-              href="/settings/research"
-              className="text-sm font-medium text-zinc-600 hover:text-zinc-900"
-            >
-              Onderzoeksinstellingen
-            </Link>
-            <Link href="/" className="text-sm font-medium text-zinc-600 hover:text-zinc-900">
-              Terug naar dashboard
-            </Link>
-          </div>
-        </div>
-      </header>
+    <div className="min-h-screen bg-[#0A0A0B] text-slate-200 flex flex-col font-sans selection:bg-cyan-500 selection:text-slate-950">
+      <AppHeader />
 
-      <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-        <div className="mb-8">
-          <h2 className="text-2xl font-bold text-zinc-900">Onderzoeksvoorstellen</h2>
-          <p className="text-zinc-600">
-            Geef je budget, watchlist en horizon. De AI geeft aan welke aandelen je hoeveel inlegt.
-          </p>
-        </div>
-
-        <div className="mb-6 flex gap-2">
-          {(["daily", "weekly", "monthly"] as Frequency[]).map((freq) => (
-            <button
-              key={freq}
-              onClick={() => setActiveTab(freq)}
-              className={`rounded-lg px-4 py-2 text-sm font-medium ${
-                activeTab === freq
-                  ? "bg-zinc-900 text-white"
-                  : "border border-zinc-300 bg-white text-zinc-700 hover:bg-zinc-50"
-              }`}
-            >
-              {freqLabels[freq]}
-            </button>
-          ))}
-        </div>
-
-        <div className="mb-8 grid gap-6 rounded-xl border border-zinc-200 bg-white p-6 shadow-sm md:grid-cols-5">
+      <main className="max-w-7xl w-full mx-auto p-4 lg:p-6 flex flex-col gap-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <label className="block text-sm font-medium text-zinc-700">Totaal budget</label>
-            <input
-              type="number"
-              min="1"
-              value={budget}
-              onChange={(e) => setBudget(e.target.value)}
-              className="mt-1 block w-full rounded-lg border border-zinc-300 px-3 py-2 text-zinc-900"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-zinc-700">Valuta</label>
-            <select
-              value={currency}
-              onChange={(e) => setCurrency(e.target.value)}
-              className="mt-1 block w-full rounded-lg border border-zinc-300 px-3 py-2 text-zinc-900"
-            >
-              <option value="EUR">EUR</option>
-              <option value="USD">USD</option>
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-zinc-700">Risicoprofiel</label>
-            <select
-              value={riskProfile}
-              onChange={(e) => setRiskProfile(e.target.value)}
-              className="mt-1 block w-full rounded-lg border border-zinc-300 px-3 py-2 text-zinc-900"
-            >
-              <option value="conservative">Conservatief</option>
-              <option value="moderate">Gematigd</option>
-              <option value="aggressive">Aggressief</option>
-            </select>
-          </div>
-          <div className="md:col-span-2">
-            <label className="block text-sm font-medium text-zinc-700">Watchlist (kommagescheiden)</label>
-            <input
-              type="text"
-              value={watchlistInput}
-              onChange={(e) => setWatchlistInput(e.target.value.toUpperCase())}
-              placeholder="Bijv. AAPL,MSFT,TSLA,NVDA"
-              className="mt-1 block w-full rounded-lg border border-zinc-300 px-3 py-2 text-zinc-900"
-            />
-            <p className="mt-1 text-xs text-zinc-500">
-              Bewaar je standaard watchlist in{" "}
-              <Link href="/settings/research" className="underline">
-                Instellingen
-              </Link>
-              . Laat leeg om op sectoren te filteren.
+            <h2 className="text-2xl font-bold text-white tracking-tight">Onderzoeksvoorstellen</h2>
+            <p className="text-sm text-slate-400 mt-1">
+              Geef je budget, watchlist en horizon. De AI geeft aan welke aandelen je hoeveel inlegt.
             </p>
           </div>
-          <div className="md:col-span-5">
-            <label className="mb-2 block text-sm font-medium text-zinc-700">Of selecteer sectoren</label>
-            <div className="grid gap-2 sm:grid-cols-3 md:grid-cols-5">
-              {sectorData?.sectors.map((sector) => (
-                <label
-                  key={sector}
-                  className={`flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-sm ${
-                    selectedSectors.includes(sector)
-                      ? "border-zinc-900 bg-zinc-50"
-                      : "border-zinc-300 bg-white"
+          <Link
+            href="/settings/research"
+            className="inline-flex items-center gap-1.5 bg-white/5 hover:bg-white/10 text-slate-200 border border-white/10 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all"
+          >
+            <Settings className="w-3.5 h-3.5 text-cyan-400" />
+            Onderzoeksinstellingen
+            <ArrowRight className="w-3 h-3 text-slate-500" />
+          </Link>
+        </div>
+
+        {/* Frequency tabs */}
+        <div className="bg-[#151518] border border-white/5 rounded-xl p-3 shadow-xl">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/5 pb-2.5 mb-2.5">
+            <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+              <Cpu className="w-4 h-4 text-cyan-400" />
+              Horizone & Frequentie
+            </h4>
+            <span className="text-[10px] bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 px-2.5 py-0.5 rounded font-semibold">
+              Model: AI Portfolio Builder
+            </span>
+          </div>
+          <div className="flex gap-2">
+            {(["daily", "weekly", "monthly"] as Frequency[]).map((freq) => {
+              const active = activeTab === freq;
+              return (
+                <button
+                  key={freq}
+                  onClick={() => setActiveTab(freq)}
+                  className={`px-4 py-2 rounded-lg text-xs font-bold uppercase transition-all cursor-pointer ${
+                    active
+                      ? "bg-cyan-500 text-[#0A0A0B] shadow"
+                      : "bg-[#0A0A0B] hover:bg-white/5 text-slate-300 border border-white/5"
                   }`}
                 >
-                  <input
-                    type="checkbox"
-                    checked={selectedSectors.includes(sector)}
-                    onChange={() => toggleSector(sector)}
-                    className="h-4 w-4 rounded border-zinc-300 text-zinc-900"
-                  />
-                  <span className="capitalize text-zinc-700">{sector.replace("_", " ")}</span>
-                </label>
-              ))}
+                  {freqLabels[freq]}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Parameters panel */}
+        <div className="bg-[#151518] border border-white/5 rounded-xl p-5 shadow-xl">
+          <div className="flex items-center gap-2 mb-4 border-b border-white/5 pb-3">
+            <div className="bg-cyan-500/10 p-2 rounded-lg border border-cyan-500/30">
+              <Brain className="w-5 h-5 text-cyan-400" />
+            </div>
+            <div>
+              <h3 className="text-sm font-bold text-white uppercase tracking-wider">Parameters Instellen</h3>
+              <p className="text-xs text-slate-400">Beheer budget, valuta, risico en universum</p>
             </div>
           </div>
-          <div className="md:col-span-5 flex items-end justify-end">
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-4">
+            <div>
+              <label className="block text-[10px] font-mono text-slate-500 uppercase tracking-wider mb-1">
+                Totaal budget
+              </label>
+              <input
+                type="number"
+                min="1"
+                value={budget}
+                onChange={(e) => setBudget(e.target.value)}
+                className="w-full bg-[#0A0A0B] border border-white/10 rounded-lg px-3 py-2 text-sm font-mono text-white focus:outline-none focus:border-cyan-500"
+              />
+            </div>
+            <div>
+              <label className="block text-[10px] font-mono text-slate-500 uppercase tracking-wider mb-1">
+                Valuta
+              </label>
+              <select
+                value={currency}
+                onChange={(e) => setCurrency(e.target.value)}
+                className="w-full bg-[#0A0A0B] border border-white/10 rounded-lg px-3 py-2 text-sm font-mono text-white focus:outline-none focus:border-cyan-500"
+              >
+                <option value="EUR">EUR</option>
+                <option value="USD">USD</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-[10px] font-mono text-slate-500 uppercase tracking-wider mb-1">
+                Risicoprofiel
+              </label>
+              <select
+                value={riskProfile}
+                onChange={(e) => setRiskProfile(e.target.value)}
+                className="w-full bg-[#0A0A0B] border border-white/10 rounded-lg px-3 py-2 text-sm font-mono text-white focus:outline-none focus:border-cyan-500"
+              >
+                <option value="conservative">Conservatief</option>
+                <option value="moderate">Gematigd</option>
+                <option value="aggressive">Aggressief</option>
+              </select>
+            </div>
+            <div className="sm:col-span-2">
+              <label className="block text-[10px] font-mono text-slate-500 uppercase tracking-wider mb-1">
+                Watchlist (kommagescheiden)
+              </label>
+              <input
+                type="text"
+                value={watchlistInput}
+                onChange={(e) => setWatchlistInput(e.target.value.toUpperCase())}
+                placeholder="Bijv. AAPL,MSFT,TSLA,NVDA"
+                className="w-full bg-[#0A0A0B] border border-white/10 rounded-lg px-3 py-2 text-sm font-mono text-white focus:outline-none focus:border-cyan-500 placeholder:text-slate-600"
+              />
+            </div>
+          </div>
+
+          <div className="mb-4">
+            <label className="block text-[10px] font-mono text-slate-500 uppercase tracking-wider mb-2">
+              Of selecteer sectoren
+            </label>
+            <div className="grid gap-2 sm:grid-cols-3 lg:grid-cols-5">
+              {sectorData?.sectors.map((sector) => {
+                const checked = selectedSectors.includes(sector);
+                return (
+                  <button
+                    key={sector}
+                    onClick={() => toggleSector(sector)}
+                    className={`flex items-center gap-2 rounded-lg border px-3 py-2.5 text-left text-xs transition-all cursor-pointer ${
+                      checked
+                        ? "bg-cyan-500/10 border-cyan-500/50 text-cyan-400"
+                        : "bg-[#0A0A0B] border-white/10 text-slate-300 hover:bg-white/5"
+                    }`}
+                  >
+                    <span className={`w-4 h-4 rounded border flex items-center justify-center text-[10px] ${checked ? "bg-cyan-500 border-cyan-500 text-[#0A0A0B]" : "border-white/20"}`}>
+                      {checked && "✓"}
+                    </span>
+                    <span className="capitalize">{sector.replace("_", " ")}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="flex justify-end">
             <button
               onClick={handleGenerate}
               disabled={generating}
-              className="rounded-lg bg-zinc-900 px-5 py-2.5 text-sm font-semibold text-white hover:bg-zinc-800 disabled:opacity-50"
+              className="bg-gradient-to-r from-cyan-500 to-emerald-400 hover:opacity-90 text-slate-950 font-bold px-5 py-2.5 rounded-lg text-sm flex items-center gap-2 transition-all cursor-pointer disabled:opacity-50 shadow-md"
             >
-              {generating ? "Genereren..." : `Genereer ${freqLabels[activeTab].toLowerCase()}e voorstel`}
+              {generating ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Analyseren...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-4 h-4 fill-slate-950" />
+                  Genereer {freqLabels[activeTab].toLowerCase()}e voorstel
+                </>
+              )}
             </button>
           </div>
         </div>
 
         {error && (
-          <div className="mb-6 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+          <div className="bg-rose-950/40 border border-rose-800/80 rounded-lg p-4 text-rose-400 flex items-center gap-3 text-sm font-semibold">
+            <AlertCircle className="w-5 h-5 shrink-0" />
             {error}
           </div>
         )}
 
         {allocationSummary && (
-          <div className="mb-6 rounded-xl border border-zinc-200 bg-white p-5 shadow-sm">
-            <h3 className="text-sm font-medium text-zinc-700">Budgetverdeling ({allocationSummary.total_allocated.toFixed(2)} / {Number(budget).toFixed(2)} {currency})</h3>
-            <div className="mt-2 h-2 w-full rounded-full bg-zinc-100">
+          <div className="bg-[#151518] border border-white/5 rounded-xl p-5 shadow-xl">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-sm font-bold text-slate-200 uppercase tracking-wider">Budgetverdeling</h3>
+              <span className="text-xs font-mono text-cyan-400">
+                {allocationSummary.total_allocated.toFixed(2)} / {budgetNum.toFixed(2)} {currency}
+              </span>
+            </div>
+            <div className="h-2.5 w-full bg-[#0A0A0B] rounded-full overflow-hidden border border-white/5">
               <div
-                className="h-2 rounded-full bg-zinc-900"
-                style={{
-                  width: `${Math.min(100, (allocationSummary.total_allocated / (Number(budget) || 1)) * 100)}%`,
-                }}
+                className="h-full bg-gradient-to-r from-cyan-500 to-emerald-400 rounded-full"
+                style={{ width: `${allocatedRatio}%` }}
               />
             </div>
-            <p className="mt-2 text-sm text-zinc-500">
+            <p className="mt-2 text-xs text-slate-400">
               Resterend: {allocationSummary.remaining_budget.toFixed(2)} {currency}
               {lastGenerated && ` · gegenereerd op ${lastGenerated.toLocaleString("nl-NL")}`}
             </p>
@@ -360,17 +399,25 @@ const handleGenerate = async () => {
         )}
 
         {allocated.length > 0 && (
-          <section className="mb-10">
-            <h3 className="mb-4 text-lg font-semibold text-zinc-900">Mijn voorstellen</h3>
+          <section>
+            <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-3 flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-cyan-400" />
+              Mijn voorstellen
+            </h3>
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
               {allocated.map((p) => (
-                <AllocatedCard
+                <ProposalCard
                   key={p.id}
-                  proposal={p}
+                  proposal={{
+                    ...p,
+                    suggested_amount: null,
+                    generated_at: undefined,
+                  } as ProposalView}
                   formatCurrency={formatCurrency}
                   onApprove={() => handleStatusUpdate(p.id, "approved")}
                   onReject={() => handleStatusUpdate(p.id, "rejected")}
                   updating={updatingProposal === p.id}
+                  variant="allocated"
                 />
               ))}
             </div>
@@ -378,17 +425,27 @@ const handleGenerate = async () => {
         )}
 
         {alsoInteresting.length > 0 && (
-          <section className="mb-10">
-            <h3 className="mb-4 text-lg font-semibold text-zinc-900">Misschien ook interessant</h3>
+          <section>
+            <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-3 flex items-center gap-2">
+              <Brain className="w-4 h-4 text-cyan-400" />
+              Misschien ook interessant
+            </h3>
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
               {alsoInteresting.map((p) => (
-                <InterestingCard
+                <ProposalCard
                   key={p.id}
-                  proposal={p}
+                  proposal={{
+                    ...p,
+                    allocated_amount: 0,
+                    quantity: null,
+                    suggested_amount: null,
+                    generated_at: undefined,
+                  } as ProposalView}
                   formatCurrency={formatCurrency}
                   onApprove={() => handleStatusUpdate(p.id, "approved")}
                   onReject={() => handleStatusUpdate(p.id, "rejected")}
                   updating={updatingProposal === p.id}
+                  variant="interesting"
                 />
               ))}
             </div>
@@ -396,264 +453,42 @@ const handleGenerate = async () => {
         )}
 
         <section>
-          <h3 className="mb-4 text-lg font-semibold text-zinc-900">Eerder gegenereerd</h3>
+          <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-3 flex items-center gap-2">
+            <Brain className="w-4 h-4 text-cyan-400" />
+            Eerder gegenereerd
+          </h3>
           {loading ? (
-            <p className="text-zinc-500">Laden...</p>
+            <div className="bg-[#151518] border border-white/5 rounded-xl p-8 text-center">
+              <Loader2 className="w-8 h-8 text-cyan-400 animate-spin mx-auto mb-2" />
+              <p className="text-sm text-slate-400">Voorstellen laden...</p>
+            </div>
           ) : storedProposals.length === 0 ? (
-            <p className="text-sm text-zinc-500">Nog geen opgeslagen voorstellen voor deze periode.</p>
+            <div className="bg-[#151518] border border-white/5 rounded-xl p-6 text-center">
+              <p className="text-sm text-slate-400">
+                Nog geen opgeslagen voorstellen voor deze periode.
+              </p>
+            </div>
           ) : (
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
               {storedProposals.map((p) => (
-                <StoredProposalCard
+                <ProposalCard
                   key={p.id}
-                  proposal={p}
+                  proposal={p as ProposalView}
                   formatCurrency={formatCurrency}
                   onApprove={() => handleStatusUpdate(p.id, "approved")}
                   onReject={() => handleStatusUpdate(p.id, "rejected")}
                   updating={updatingProposal === p.id}
+                  variant="stored"
                 />
               ))}
             </div>
           )}
         </section>
       </main>
-    </div>
-  );
-}
 
-function badgeColor(direction: string) {
-  return direction === "BUY"
-    ? "bg-green-100 text-green-700"
-    : direction === "SELL"
-    ? "bg-red-100 text-red-700"
-    : "bg-zinc-100 text-zinc-700";
-}
-
-function AllocatedCard({
-  proposal,
-  formatCurrency,
-  onApprove,
-  onReject,
-  updating,
-}: {
-  proposal: AllocatedProposal;
-  formatCurrency: (value: number | null | undefined, curr?: string) => string;
-  onApprove: () => void;
-  onReject: () => void;
-  updating: boolean;
-}) {
-  return (
-    <div className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm">
-      <div className="mb-3 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <span className="text-lg font-bold text-zinc-900">{proposal.symbol}</span>
-          <span className={`rounded-full px-2 py-1 text-xs font-medium uppercase ${badgeColor(proposal.direction)}`}>
-            {proposal.direction === "BUY" ? "Koop" : proposal.direction === "SELL" ? "Verkoop" : "Hold"}
-          </span>
-        </div>
-        {proposal.confidence !== null && proposal.confidence !== undefined && (
-          <span className="text-xs text-zinc-500">
-            {(proposal.confidence * 100).toFixed(0)}% confidence
-          </span>
-        )}
-      </div>
-
-      <p className="mb-4 text-sm text-zinc-700 leading-relaxed">
-        {proposal.thesis || "Geen beschrijving beschikbaar."}
-      </p>
-
-      <div className="mb-4 grid grid-cols-2 gap-3 text-sm">
-        <div>
-          <p className="text-zinc-500">Entry</p>
-          <p className="font-medium text-zinc-900">{formatCurrency(proposal.entry_price, proposal.currency || undefined)}</p>
-        </div>
-        <div>
-          <p className="text-zinc-500">Stop loss</p>
-          <p className="font-medium text-zinc-900">{formatCurrency(proposal.stop_loss, proposal.currency || undefined)}</p>
-        </div>
-        <div>
-          <p className="text-zinc-500">Take profit 1</p>
-          <p className="font-medium text-zinc-900">{formatCurrency(proposal.take_profit_1, proposal.currency || undefined)}</p>
-        </div>
-        <div>
-          <p className="text-zinc-500">Take profit 2</p>
-          <p className="font-medium text-zinc-900">{formatCurrency(proposal.take_profit_2, proposal.currency || undefined)}</p>
-        </div>
-      </div>
-
-      <div className="rounded-lg bg-zinc-50 p-3 text-sm">
-        <div className="flex justify-between">
-          <span className="text-zinc-500">Inleggen</span>
-          <span className="font-semibold text-zinc-900">{formatCurrency(proposal.allocated_amount, proposal.currency || undefined)}</span>
-        </div>
-        <div className="flex justify-between">
-          <span className="text-zinc-500">Aantal aandelen</span>
-          <span className="font-semibold text-zinc-900">{proposal.quantity}</span>
-        </div>
-      </div>
-
-      <div className="mt-4 flex gap-2">
-        <button
-          onClick={onApprove}
-          disabled={updating || proposal.status === "approved"}
-          className="flex-1 rounded-lg bg-green-600 px-3 py-2 text-sm font-semibold text-white hover:bg-green-700 disabled:bg-zinc-300"
-        >
-          {proposal.status === "approved" ? "Goedgekeurd" : "Goedkeuren"}
-        </button>
-        <button
-          onClick={onReject}
-          disabled={updating || proposal.status === "rejected"}
-          className="flex-1 rounded-lg border border-zinc-300 px-3 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50 disabled:bg-zinc-100"
-        >
-          {proposal.status === "rejected" ? "Afgewezen" : "Afwijzen"}
-        </button>
-      </div>
-    </div>
-  );
-}
-
-function InterestingCard({
-  proposal,
-  formatCurrency,
-  onApprove,
-  onReject,
-  updating,
-}: {
-  proposal: InterestingProposal;
-  formatCurrency: (value: number | null | undefined, curr?: string) => string;
-  onApprove: () => void;
-  onReject: () => void;
-  updating: boolean;
-}) {
-  return (
-    <div className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm opacity-90">
-      <div className="mb-2 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <span className="font-bold text-zinc-900">{proposal.symbol}</span>
-          <span className={`rounded-full px-2 py-0.5 text-xs font-medium uppercase ${badgeColor(proposal.direction)}`}>
-            {proposal.direction}
-          </span>
-        </div>
-        {proposal.confidence !== null && proposal.confidence !== undefined && (
-          <span className="text-xs text-zinc-500">{(proposal.confidence * 100).toFixed(0)}%</span>
-        )}
-      </div>
-      <p className="text-sm text-zinc-700 leading-relaxed">{proposal.thesis}</p>
-      <div className="mt-3 flex gap-4 text-xs text-zinc-600">
-        <span>Entry {formatCurrency(proposal.entry_price, proposal.currency || undefined)}</span>
-        <span>SL {formatCurrency(proposal.stop_loss, proposal.currency || undefined)}</span>
-        <span>TP {formatCurrency(proposal.take_profit_1, proposal.currency || undefined)}</span>
-      </div>
-
-      <div className="mt-4 flex gap-2">
-        <button
-          onClick={onApprove}
-          disabled={updating || proposal.status === "approved"}
-          className="flex-1 rounded-lg bg-green-600 px-3 py-2 text-xs font-semibold text-white hover:bg-green-700 disabled:bg-zinc-300"
-        >
-          {proposal.status === "approved" ? "Goedgekeurd" : "Goedkeuren"}
-        </button>
-        <button
-          onClick={onReject}
-          disabled={updating || proposal.status === "rejected"}
-          className="flex-1 rounded-lg border border-zinc-300 px-3 py-2 text-xs font-medium text-zinc-700 hover:bg-zinc-50 disabled:bg-zinc-100"
-        >
-          {proposal.status === "rejected" ? "Afgewezen" : "Afwijzen"}
-        </button>
-      </div>
-    </div>
-  );
-}
-
-function StoredProposalCard({
-  proposal,
-  formatCurrency,
-  onApprove,
-  onReject,
-  updating,
-}: {
-  proposal: StoredProposal;
-  formatCurrency: (value: number | null | undefined, curr?: string) => string;
-  onApprove: () => void;
-  onReject: () => void;
-  updating: boolean;
-}) {
-  return (
-    <div className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm">
-      <div className="mb-3 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <span className="text-lg font-bold text-zinc-900">{proposal.symbol}</span>
-          <span className={`rounded-full px-2 py-1 text-xs font-medium uppercase ${badgeColor(proposal.direction)}`}>
-            {proposal.direction}
-          </span>
-        </div>
-        {proposal.confidence !== null && proposal.confidence !== undefined && (
-          <span className="text-xs text-zinc-500">{(proposal.confidence * 100).toFixed(0)}% confidence</span>
-        )}
-      </div>
-      <p className="mb-4 text-sm text-zinc-700 leading-relaxed">{proposal.thesis || "Geen beschrijving beschikbaar."}</p>
-      <div className="mb-2 grid grid-cols-2 gap-3 text-sm">
-        <div>
-          <p className="text-zinc-500">Entry</p>
-          <p className="font-medium text-zinc-900">{formatCurrency(proposal.entry_price, proposal.currency || undefined)}</p>
-        </div>
-        <div>
-          <p className="text-zinc-500">Stop loss</p>
-          <p className="font-medium text-zinc-900">{formatCurrency(proposal.stop_loss, proposal.currency || undefined)}</p>
-        </div>
-        <div>
-          <p className="text-zinc-500">Take profit 1</p>
-          <p className="font-medium text-zinc-900">{formatCurrency(proposal.take_profit_1, proposal.currency || undefined)}</p>
-        </div>
-        <div>
-          <p className="text-zinc-500">Take profit 2</p>
-          <p className="font-medium text-zinc-900">{formatCurrency(proposal.take_profit_2, proposal.currency || undefined)}</p>
-        </div>
-      </div>
-      <div className="border-t border-zinc-100 pt-3 text-sm">
-        <div className="flex justify-between">
-          <span className="text-zinc-500">Voorgesteld bedrag</span>
-          <span className="font-medium text-zinc-900">{formatCurrency(proposal.suggested_amount, proposal.currency || undefined)}</span>
-        </div>
-        <div className="flex justify-between">
-          <span className="text-zinc-500">Aantal</span>
-          <span className="font-medium text-zinc-900">{proposal.quantity ?? "—"}</span>
-        </div>
-      </div>
-      <p className="mt-3 text-xs text-zinc-400">{new Date(proposal.generated_at).toLocaleString("nl-NL")}</p>
-
-      {proposal.status !== "approved" && proposal.status !== "rejected" && (
-        <div className="mt-4 flex gap-2">
-          <button
-            onClick={onApprove}
-            disabled={updating}
-            className="flex-1 rounded-lg bg-green-600 px-3 py-2 text-xs font-semibold text-white hover:bg-green-700 disabled:opacity-50"
-          >
-            Goedkeuren
-          </button>
-          <button
-            onClick={onReject}
-            disabled={updating}
-            className="flex-1 rounded-lg border border-zinc-300 px-3 py-2 text-xs font-medium text-zinc-700 hover:bg-zinc-50 disabled:opacity-50"
-          >
-            Afwijzen
-          </button>
-        </div>
-      )}
-
-      {(proposal.status === "approved" || proposal.status === "rejected") && (
-        <div className="mt-4">
-          <span
-            className={`rounded-full px-3 py-1 text-xs font-medium ${
-              proposal.status === "approved"
-                ? "bg-green-100 text-green-700"
-                : "bg-zinc-100 text-zinc-700"
-            }`}
-          >
-            {proposal.status === "approved" ? "Goedgekeurd" : "Afgewezen"}
-          </span>
-        </div>
-      )}
+      <footer className="mt-auto bg-[#0E0E10] border-t border-white/10 py-6 px-6 text-center text-xs text-slate-500">
+        <p>© 2026 TRADERMONKEYS. Alle transacties worden veilig via je broker uitgevoerd.</p>
+      </footer>
     </div>
   );
 }

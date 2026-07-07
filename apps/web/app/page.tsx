@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import AppHeader from "@/components/app-header";
 import HealthCheck from "@/components/health-check";
 import PortfolioSummaryCards from "@/components/portfolio-summary";
 import LatestResearchProposals from "@/components/latest-research";
@@ -11,33 +12,13 @@ export default async function DashboardPage() {
   } = await supabase.auth.getUser();
 
   return (
-    <div className="min-h-full bg-zinc-50">
-      <header className="border-b border-zinc-200 bg-white">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
-          <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-zinc-900 text-white font-bold">
-              TM
-            </div>
-            <h1 className="text-xl font-bold text-zinc-900">TraderMonkeys</h1>
-          </div>
-          <div className="flex items-center gap-4">
-            <span className="text-sm text-zinc-600">{user?.email}</span>
-            <form action="/auth/signout" method="post">
-              <button
-                type="submit"
-                className="rounded-lg border border-zinc-300 px-3 py-1.5 text-sm font-medium text-zinc-700 hover:bg-zinc-50"
-              >
-                Uitloggen
-              </button>
-            </form>
-          </div>
-        </div>
-      </header>
+    <div className="min-h-screen bg-[#0A0A0B] text-slate-200 flex flex-col font-sans selection:bg-cyan-500 selection:text-slate-950">
+      <AppHeader userEmail={user?.email || null} />
 
-      <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+      <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8 flex-1">
         <div className="mb-8">
-          <h2 className="text-2xl font-bold text-zinc-900">Dashboard</h2>
-          <p className="text-zinc-600">
+          <h2 className="text-2xl font-bold text-white">Dashboard</h2>
+          <p className="text-slate-400">
             Realtime overzicht van je portfolio, onderzoek en signalen.
           </p>
         </div>
@@ -51,12 +32,12 @@ export default async function DashboardPage() {
         <div className="mt-12">
           <div className="mb-4 flex items-center justify-between">
             <div>
-              <h2 className="text-lg font-semibold text-zinc-900">Laatste onderzoeksvoorstellen</h2>
-              <p className="text-sm text-zinc-600">AI-adviezen die je recent hebt gegenereerd.</p>
+              <h2 className="text-lg font-semibold text-white">Laatste onderzoeksvoorstellen</h2>
+              <p className="text-sm text-slate-400">AI-adviezen die je recent hebt gegenereerd.</p>
             </div>
             <Link
               href="/onderzoek"
-              className="text-sm font-medium text-zinc-900 underline hover:text-zinc-700"
+              className="text-sm font-medium text-cyan-400 hover:text-cyan-300"
             >
               Alles bekijken
             </Link>
@@ -65,63 +46,30 @@ export default async function DashboardPage() {
         </div>
 
         <div className="mt-12 grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-          <Link
-            href="/portfolio"
-            className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm hover:border-zinc-300"
-          >
-            <h3 className="font-semibold text-zinc-900">Portfolio</h3>
-            <p className="mt-2 text-sm text-zinc-600">
-              Bekijk je posities, P&L en lopende orders.
-            </p>
-          </Link>
-          <Link
-            href="/news"
-            className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm hover:border-zinc-300"
-          >
-            <h3 className="font-semibold text-zinc-900">Nieuws & Sentiment</h3>
-            <p className="mt-2 text-sm text-zinc-600">
-              SEC filings, finance feeds en AI-sentiment.
-            </p>
-          </Link>
-          <Link
-            href="/onderzoek"
-            className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm hover:border-zinc-300"
-          >
-            <h3 className="font-semibold text-zinc-900">Onderzoek</h3>
-            <p className="mt-2 text-sm text-zinc-600">
-              Dagelijks, wekelijks en maandelijks beleggingsadvies.
-            </p>
-          </Link>
-          <Link
-            href="/signals"
-            className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm hover:border-zinc-300"
-          >
-            <h3 className="font-semibold text-zinc-900">Signalen</h3>
-            <p className="mt-2 text-sm text-zinc-600">AI-generated trade setups en je goedkeuringen.</p>
-          </Link>
-          <Link
-            href="/allocate"
-            className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm hover:border-zinc-300"
-          >
-            <h3 className="font-semibold text-zinc-900">Portfoliobuilder</h3>
-            <p className="mt-2 text-sm text-zinc-600">Geef een budget en krijg een verdelingsadvies.</p>
-          </Link>
-          <Link
-            href="/assistant"
-            className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm hover:border-zinc-300"
-          >
-            <h3 className="font-semibold text-zinc-900">AI Assistant</h3>
-            <p className="mt-2 text-sm text-zinc-600">Vraag over je portfolio en marktomstandigheden.</p>
-          </Link>
-          <Link
-            href="/settings/prompt"
-            className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm hover:border-zinc-300"
-          >
-            <h3 className="font-semibold text-zinc-900">AI Prompt</h3>
-            <p className="mt-2 text-sm text-zinc-600">Pas het prompt aan dat de AI gebruikt voor signalen.</p>
-          </Link>
+          {[
+            { href: "/portfolio", title: "Portfolio", desc: "Bekijk je posities, P&L en lopende orders." },
+            { href: "/news", title: "Nieuws & Sentiment", desc: "SEC filings, finance feeds en AI-sentiment." },
+            { href: "/onderzoek", title: "Onderzoek", desc: "Dagelijks, wekelijks en maandelijks beleggingsadvies." },
+            { href: "/signals", title: "Signalen", desc: "AI-generated trade setups en je goedkeuringen." },
+            { href: "/allocate", title: "Portfoliobuilder", desc: "Geef een budget en krijg een verdelingsadvies." },
+            { href: "/assistant", title: "AI Assistant", desc: "Vraag over je portfolio en marktomstandigheden." },
+            { href: "/settings/prompt", title: "AI Prompt", desc: "Pas het prompt aan dat de AI gebruikt voor signalen." },
+          ].map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              className="rounded-xl border border-white/5 bg-[#151518] p-6 shadow-sm hover:border-cyan-500/30 hover:bg-white/[0.03] transition-all"
+            >
+              <h3 className="font-semibold text-white">{item.title}</h3>
+              <p className="mt-2 text-sm text-slate-400">{item.desc}</p>
+            </Link>
+          ))}
         </div>
       </main>
+
+      <footer className="bg-[#0E0E10] border-t border-white/10 py-6 px-6 text-center text-xs text-slate-500">
+        <p>© 2026 TRADERMONKEYS PRO. Alle transacties worden veilig via je broker uitgevoerd.</p>
+      </footer>
     </div>
   );
 }
