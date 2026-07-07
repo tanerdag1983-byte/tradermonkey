@@ -35,11 +35,8 @@ tzdata>=2024.1
 
 
 
-# ML / NLP
-torch>=2.6.0
-transformers>=4.49.0
-sentencepiece>=0.2.0
-protobuf>=5.29.0
+# ML / NLP (no heavy transformers/torch on Render free tier)
+# Sentiment analysis is implemented as a lightweight rule-based scorer.
 
 
 # Market data
