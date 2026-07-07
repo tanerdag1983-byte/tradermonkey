@@ -75,3 +75,34 @@ class NewsItemSchema(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class ResearchProposalSchema(BaseModel):
+    id: UUID
+    user_id: str
+    symbol: str
+    frequency: str
+    direction: str
+    entry_price: Optional[float]
+    stop_loss: Optional[float]
+    take_profit_1: Optional[float]
+    take_profit_2: Optional[float]
+    quantity: Optional[float]
+    suggested_amount: Optional[float]
+    confidence: Optional[float]
+    thesis: Optional[str]
+    budget: Optional[float]
+    currency: Optional[str]
+    risk_profile: Optional[str]
+    status: str
+    generated_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class UserSettingSchema(BaseModel):
+    user_id: str
+    key: str
+    value: dict | list | str | int | float | bool | None
+    updated_at: Optional[datetime] = None

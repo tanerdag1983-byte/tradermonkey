@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import List, Dict, Any
 from sqlalchemy.orm import Session
 from app.models import NewsItem
@@ -9,7 +9,11 @@ from app.services.ml.sentiment import analyze_sentiment, sentiment_to_score
 from app.services.sources.normalizer import normalize_symbol
 
 
-async def ingest_news(db: Session, max_items: int = 50) -> Dict[str, Any]:
+async def ingest_news(
+    db: Session,
+    max_items_per_source: int = 40,
+    recency_hours: int = 48,
+) -> Dict[str, Any]:
     """Fetch news from all sources, deduplicate, analyze sentiment and store."""
     sec = SECConnector()
     rss = RSSConnector()
@@ -25,11 +29,37 @@ async def ingest_news(db: Session, max_items: int = 50) -> Dict[str, Any]:
     except Exception as e:
         print(f"RSS fetch failed: {e}")
 
+    # Normalize dates and drop very old items
+    cutoff = datetime.utcnow() - timedelta(hours=recency_hours)
+    filtered = []
+    for item in raw_items:
+        published = item.get("published_at")
+        if not isinstance(published, datetime):
+            continue
+        # Ensure we compare naive datetimes
+        if published.tzinfo:
+            published = published.replace(tzinfo=None)
+        if published < cutoff:
+            continue
+        item["published_at"] = published
+        filtered.append(item)
+
+    # Sort descending by date and cap per source
+    filtered.sort(key=lambda x: x.get("published_at") or datetime.min, reverse=True)
+    per_source = {}
+    capped = []
+    for item in filtered:
+        source = item.get("source", "unknown")
+        if per_source.get(source, 0) >= max_items_per_source:
+            continue
+        per_source[source] = per_source.get(source, 0) + 1
+        capped.append(item)
+
     stored = 0
     skipped = 0
-
     seen_titles = set()
-    for item in raw_items[:max_items]:
+
+    for item in capped:
         title = item.get("title", "")
         normalized_title = title.strip().lower()
         if not title or normalized_title in seen_titles or is_duplicate(db, title, item.get("published_at")):
@@ -41,7 +71,6 @@ async def ingest_news(db: Session, max_items: int = 50) -> Dict[str, Any]:
         sentiment = analyze_sentiment(text, item.get("language"))
         sentiment_score = sentiment_to_score(sentiment["label"], sentiment["score"])
 
-        # Try to extract ticker from title/body
         entities = item.get("entities", {}) or {}
         ticker_candidates = _extract_tickers(title, item.get("body", ""))
         if ticker_candidates:
@@ -63,14 +92,18 @@ async def ingest_news(db: Session, max_items: int = 50) -> Dict[str, Any]:
         stored += 1
 
     db.commit()
-    return {"stored": stored, "skipped": skipped, "total": len(raw_items)}
+    return {
+        "stored": stored,
+        "skipped": skipped,
+        "total_raw": len(raw_items),
+        "considered": len(capped),
+    }
 
 
 def _extract_tickers(title: str, body: str) -> List[str]:
     """Very simple ticker extraction. Returns normalized candidates."""
     import re
     combined = f"{title} {body}".upper()
-    # Look for patterns like (AAPL), $AAPL, or standalone 1-5 letter caps
     matches = set()
     for m in re.finditer(r"\$([A-Z]{1,5})", combined):
         matches.add(normalize_symbol(m.group(1)))

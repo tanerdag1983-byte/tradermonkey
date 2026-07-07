@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime
-from sqlalchemy import Column, String, Float, Integer, Boolean, DateTime, Text, JSON
+from sqlalchemy import Column, String, Float, Integer, Boolean, DateTime, Text, JSON, UniqueConstraint
 from sqlalchemy.dialects.postgresql import UUID
 from app.database import Base
 
@@ -127,3 +127,42 @@ class AuditLog(Base):
     entity_id = Column(String, nullable=True)
     payload = Column(JSON, nullable=True)
     created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
+
+
+class ResearchProposal(Base):
+    __tablename__ = "research_proposals"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id = Column(String, nullable=False, index=True)
+    symbol = Column(String, nullable=False, index=True)
+    frequency = Column(String, nullable=False, index=True)  # daily / weekly / monthly
+    direction = Column(String, nullable=False)  # BUY / HOLD / SELL
+    entry_price = Column(Float, nullable=True)
+    stop_loss = Column(Float, nullable=True)
+    take_profit_1 = Column(Float, nullable=True)
+    take_profit_2 = Column(Float, nullable=True)
+    quantity = Column(Float, nullable=True)
+    suggested_amount = Column(Float, nullable=True)  # amount in budget currency
+    confidence = Column(Float, nullable=True)
+    thesis = Column(Text, nullable=True)
+    budget = Column(Float, nullable=True)
+    currency = Column(String, nullable=True)
+    risk_profile = Column(String, nullable=True)
+    status = Column(String, nullable=False, default="generated")  # generated / reviewed
+    analysis_json = Column(JSON, nullable=True)
+    generated_at = Column(DateTime(timezone=True), default=datetime.utcnow)
+
+
+class UserSetting(Base):
+    __tablename__ = "user_settings"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id = Column(String, nullable=False, index=True)
+    key = Column(String, nullable=False, index=True)
+    value = Column(JSON, nullable=True)
+    updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    __table_args__ = (
+        UniqueConstraint("user_id", "key", name="uq_user_settings_user_key"),
+        {"comment": "Per-user key/value settings"},
+    )

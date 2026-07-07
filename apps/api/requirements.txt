@@ -29,6 +29,12 @@ cryptography>=44.0.0
 # News / RSS parsing
 feedparser>=6.0.11
 
+# Scheduler
+apscheduler>=3.10.4
+tzdata>=2024.1
+
+
+
 # ML / NLP
 torch>=2.6.0
 transformers>=4.49.0

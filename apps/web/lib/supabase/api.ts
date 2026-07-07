@@ -70,6 +70,61 @@ export async function getBrokerStatus() {
   return apiFetch("/broker/status");
 }
 
+export interface GenerateResearchRequest {
+  symbol?: string;
+  watchlist?: string[];
+  sectors?: string[];
+  budget?: number;
+  currency?: string;
+  risk_profile?: string;
+  frequency?: string;
+}
+
+export async function generateResearch(payload: GenerateResearchRequest) {
+  return apiFetch("/research/generate", { method: "POST", body: JSON.stringify(payload) });
+}
+
+export async function getResearchProposals(params?: { frequency?: string; direction?: string; limit?: number; offset?: number }) {
+  const qs = new URLSearchParams();
+  if (params?.frequency) qs.set("frequency", params.frequency);
+  if (params?.direction) qs.set("direction", params.direction);
+  if (params?.limit !== undefined) qs.set("limit", String(params.limit));
+  if (params?.offset !== undefined) qs.set("offset", String(params.offset));
+  const query = qs.toString();
+  return apiFetch(`/research/proposals${query ? `?${query}` : ""}`);
+}
+
+export async function getResearchSettings() {
+  return apiFetch("/research/settings");
+}
+
+export interface ResearchSettingsInput {
+  budget?: number;
+  currency?: string;
+  risk_profile?: string;
+  watchlist?: string[];
+  sectors?: string[];
+}
+
+export async function updateResearchSettings(payload: ResearchSettingsInput) {
+  return apiFetch("/research/settings", { method: "PUT", body: JSON.stringify(payload) });
+}
+
+export async function getResearchSectors() {
+  return apiFetch("/research/sectors");
+}
+
+export async function sendResearchDigest(payload: { frequency?: string; limit?: number }) {
+  return apiFetch("/research/digest", { method: "POST", body: JSON.stringify(payload) });
+}
+
+export async function updateProposalStatus(proposalId: string, status: "approved" | "rejected" | "reviewed") {
+  return apiFetch(`/research/proposals/${proposalId}/status`, {
+    method: "POST",
+    body: JSON.stringify({ status }),
+  });
+}
+
 export async function getSystemPrompt() {
   return apiFetch("/system/prompt");
 }

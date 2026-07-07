@@ -2,6 +2,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import HealthCheck from "@/components/health-check";
 import PortfolioSummaryCards from "@/components/portfolio-summary";
+import LatestResearchProposals from "@/components/latest-research";
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -37,7 +38,7 @@ export default async function DashboardPage() {
         <div className="mb-8">
           <h2 className="text-2xl font-bold text-zinc-900">Dashboard</h2>
           <p className="text-zinc-600">
-            Realtime overzicht van je portfolio, signalen en broker status.
+            Realtime overzicht van je portfolio, onderzoek en signalen.
           </p>
         </div>
 
@@ -47,7 +48,23 @@ export default async function DashboardPage() {
           <PortfolioSummaryCards />
         </div>
 
-        <div className="mt-8 grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+        <div className="mt-12">
+          <div className="mb-4 flex items-center justify-between">
+            <div>
+              <h2 className="text-lg font-semibold text-zinc-900">Laatste onderzoeksvoorstellen</h2>
+              <p className="text-sm text-zinc-600">AI-adviezen die je recent hebt gegenereerd.</p>
+            </div>
+            <Link
+              href="/onderzoek"
+              className="text-sm font-medium text-zinc-900 underline hover:text-zinc-700"
+            >
+              Alles bekijken
+            </Link>
+          </div>
+          <LatestResearchProposals />
+        </div>
+
+        <div className="mt-12 grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
           <Link
             href="/portfolio"
             className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm hover:border-zinc-300"
@@ -64,6 +81,15 @@ export default async function DashboardPage() {
             <h3 className="font-semibold text-zinc-900">Nieuws & Sentiment</h3>
             <p className="mt-2 text-sm text-zinc-600">
               SEC filings, finance feeds en AI-sentiment.
+            </p>
+          </Link>
+          <Link
+            href="/onderzoek"
+            className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm hover:border-zinc-300"
+          >
+            <h3 className="font-semibold text-zinc-900">Onderzoek</h3>
+            <p className="mt-2 text-sm text-zinc-600">
+              Dagelijks, wekelijks en maandelijks beleggingsadvies.
             </p>
           </Link>
           <Link

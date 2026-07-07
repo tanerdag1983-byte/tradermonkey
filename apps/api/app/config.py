@@ -27,6 +27,31 @@ class Settings(BaseSettings):
     openrouter_api_key: str = ""
     openrouter_base_url: str = "https://openrouter.ai/api/v1"
 
+    # Optional path to a file containing a custom signal prompt template
+    signal_prompt_override_path: str = ""
+
+    # Optional path to a file containing a custom research prompt template
+    research_prompt_override_path: str = ""
+
+    # Scheduler settings
+    enable_scheduler: bool = False
+    scheduler_user_id: str = "scheduler"
+    scheduler_news_interval_minutes: int = 60
+    scheduler_signals_time: str = "09:30"
+    scheduler_signals_timezone: str = "US/Eastern"
+    scheduler_default_watchlist: str = "AAPL,MSFT,AMZN,GOOGL,META,TSLA,NVDA,AMD,INTC,NFLX,CRM,BABA,JPM,V,MA,DIS"
+
+    # Default values used by the scheduler-generated research proposals
+    research_default_budget: float = 1000.0
+    research_default_currency: str = "EUR"
+    research_default_risk_profile: str = "moderate"
+
+    # Notifications (email digest)
+    resend_api_key: str = ""
+    notification_from_email: str = "noreply@tradermonkeys.app"
+    admin_email: str = ""
+    enable_email_digest: bool = False
+
     sentry_dsn: str = ""
 
     class Config:

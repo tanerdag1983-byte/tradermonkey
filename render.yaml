@@ -1,0 +1,61 @@
+# Render Blueprint for TraderMonkeys API
+# This deploys the FastAPI backend as a Docker web service.
+# Set the secret env vars in the Render dashboard after first deploy.
+services:
+  - type: web
+    name: tradermonkeys-api
+    runtime: docker
+    dockerfilePath: ./apps/api/Dockerfile
+    plan: standard
+    healthCheckPath: /health
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: DEBUG
+        value: "false"
+      - key: LOG_LEVEL
+        value: info
+      - key: ENABLE_SCHEDULER
+        value: "true"
+      - key: SCHEDULER_USER_ID
+        value: scheduler
+      - key: SCHEDULER_NEWS_INTERVAL_MINUTES
+        value: "60"
+      - key: SCHEDULER_SIGNALS_TIME
+        value: "09:30"
+      - key: SCHEDULER_SIGNALS_TIMEZONE
+        value: US/Eastern
+      - key: SCHEDULER_DEFAULT_WATCHLIST
+        value: AAPL,MSFT,AMZN,GOOGL,META,TSLA,NVDA,AMD,INTC,NFLX,CRM,BABA,JPM,V,MA,DIS
+      - key: RESEARCH_DEFAULT_BUDGET
+        value: "1000.0"
+      - key: RESEARCH_DEFAULT_CURRENCY
+        value: EUR
+      - key: RESEARCH_DEFAULT_RISK_PROFILE
+        value: moderate
+      # Optional: path inside the container for custom prompt templates
+      - key: SIGNAL_PROMPT_OVERRIDE_PATH
+        value: ""
+      - key: RESEARCH_PROMPT_OVERRIDE_PATH
+        value: ""
+      # Secrets: fill these in the Render dashboard
+      - key: DATABASE_URL
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_ANON_KEY
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: OPENROUTER_API_KEY
+        sync: false
+      - key: T212_API_KEY
+        sync: false
+      - key: T212_API_SECRET
+        sync: false
+      - key: T212_BASE_URL
+        value: https://demo.trading212.com
+      - key: ALPACA_API_KEY
+        sync: false
+      - key: ALPACA_SECRET_KEY
+        sync: false

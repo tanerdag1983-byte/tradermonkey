@@ -1,10 +1,11 @@
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import List, Dict, Any, Optional
 
 import yfinance as yf
 import pandas as pd
 from sqlalchemy.orm import Session
+from sqlalchemy.dialects.postgresql import insert
 
 from app.models import MarketBar
 
@@ -54,15 +55,21 @@ def fetch_bars_from_yahoo(
     df["symbol"] = symbol.upper()
     df["timeframe"] = timeframe
 
-    # Timestamp handling: Datetime may be tz-aware already; strip tz to store as UTC-ish
+    # Timestamp handling: yfinance returns tz-aware (usually America/New_York) or naive datetimes.
+    # Normalize everything to UTC-aware datetime for consistent storage and queries.
     if "Date" in df.columns:
-        df["timestamp"] = pd.to_datetime(df["Date"]).dt.tz_localize(None)
+        ts = pd.to_datetime(df["Date"])
     elif "Datetime" in df.columns:
-        df["timestamp"] = pd.to_datetime(df["Datetime"]).dt.tz_localize(None)
+        ts = pd.to_datetime(df["Datetime"])
     else:
-        df["timestamp"] = datetime.utcnow()
+        ts = pd.to_datetime(datetime.utcnow())
 
-    df["timestamp"] = pd.to_datetime(df["timestamp"]).dt.tz_localize(None)
+    if ts.dt.tz is None:
+        ts = ts.dt.tz_localize("UTC")
+    else:
+        ts = ts.dt.tz_convert("UTC")
+    df["timestamp"] = ts
+
     df = df.sort_values("timestamp").reset_index(drop=True)
 
     # Deduplicate by timestamp to avoid lightweight-charts errors
@@ -74,31 +81,41 @@ def fetch_bars_from_yahoo(
 from sqlalchemy.exc import IntegrityError
 
 def save_bars_to_db(db: Session, df: pd.DataFrame) -> int:
-    """Upsert bars into the database. Returns number of bars saved."""
+    """Upsert bars into the database. Returns number of new bars saved."""
     if df.empty:
         return 0
 
-    saved = 0
+    rows = []
     for _, row in df.iterrows():
-        bar = MarketBar(
-            symbol=row["symbol"],
-            timeframe=row["timeframe"],
-            timestamp=row["timestamp"],
-            open=float(row["open"]),
-            high=float(row["high"]),
-            low=float(row["low"]),
-            close=float(row["close"]),
-            volume=float(row["volume"]) if pd.notna(row["volume"]) else None,
-        )
-        db.add(bar)
-        try:
-            db.flush()
-            saved += 1
-        except IntegrityError:
-            db.rollback()
+        ts = row["timestamp"]
+        if isinstance(ts, pd.Timestamp):
+            ts = ts.to_pydatetime()
+        if ts.tzinfo is None:
+            ts = ts.replace(tzinfo=timezone.utc)
+        rows.append({
+            "symbol": row["symbol"],
+            "timeframe": row["timeframe"],
+            "timestamp": ts,
+            "open": float(row["open"]),
+            "high": float(row["high"]),
+            "low": float(row["low"]),
+            "close": float(row["close"]),
+            "volume": float(row["volume"]) if pd.notna(row["volume"]) else None,
+            "created_at": datetime.now(timezone.utc),
+        })
 
-    db.commit()
-    return saved
+    stmt = insert(MarketBar).values(rows)
+    stmt = stmt.on_conflict_do_nothing(
+        index_elements=["symbol", "timeframe", "timestamp"]
+    )
+    try:
+        result = db.execute(stmt)
+        db.commit()
+        # rowcount may be -1 with ON CONFLICT DO NOTHING in psycopg
+        return result.rowcount if result.rowcount >= 0 else len(rows)
+    except IntegrityError:
+        db.rollback()
+        return 0
 
 
 def get_bars_as_records(

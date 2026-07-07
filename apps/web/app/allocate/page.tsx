@@ -153,9 +153,9 @@ export default function AllocatePage() {
                   <span className="text-sm text-zinc-500">Confidence: {(alloc.confidence * 100).toFixed(0)}%</span>
                 </div>
                 <div className="mb-3 grid grid-cols-2 gap-4 text-sm sm:grid-cols-4">
-                  <div><p className="text-zinc-500">Budget</p><p className="font-medium">€{alloc.allocated_budget.toFixed(2)}</p></div>
-                  <div><p className="text-zinc-500">Aantal</p><p className="font-medium">{alloc.quantity}</p></div>
-                  <div><p className="text-zinc-500">Entry</p><p className="font-medium">${alloc.entry_price.toFixed(2)}</p></div>
+                  <div><p className="text-zinc-500">Budget</p><p className="font-medium text-zinc-900">€{alloc.allocated_budget.toFixed(2)}</p></div>
+                  <div><p className="text-zinc-500">Aantal</p><p className="font-medium text-zinc-900">{alloc.quantity}</p></div>
+                  <div><p className="text-zinc-500">Entry</p><p className="font-medium text-zinc-900">${alloc.entry_price.toFixed(2)}</p></div>
                   <div><p className="text-zinc-500">Stop loss</p><p className="font-medium text-red-600">${alloc.stop_loss.toFixed(2)}</p></div>
                 </div>
                 <p className="text-sm text-zinc-700">{alloc.thesis}</p>

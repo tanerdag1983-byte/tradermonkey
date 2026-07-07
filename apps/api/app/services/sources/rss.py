@@ -1,5 +1,6 @@
+import email.utils
 import xml.etree.ElementTree as ET
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import List, Dict, Any
 import httpx
 
@@ -23,6 +24,18 @@ FEEDS = {
         "publisher": "BNR",
         "language": "nl",
     },
+    "benzinga": {
+        "url": "https://www.benzinga.com/feed",
+        "source_class": "news_wire",
+        "publisher": "Benzinga",
+        "language": "en",
+    },
+    "sec_newsroom": {
+        "url": "https://www.sec.gov/news/pressreleases.rss",
+        "source_class": "regulator_news",
+        "publisher": "SEC Newsroom",
+        "language": "en",
+    },
 }
 
 
@@ -43,8 +56,11 @@ class RSSConnector:
         return results
 
     async def fetch_feed(self, config: Dict[str, Any]) -> List[Dict[str, Any]]:
+        headers = {}
+        if "sec." in config["url"]:
+            headers["User-Agent"] = "TraderMonkeys personal app tanerdag1983@gmail.com"
         async with httpx.AsyncClient(timeout=30.0) as client:
-            response = await client.get(config["url"])
+            response = await client.get(config["url"], headers=headers)
             response.raise_for_status()
             return self._parse(response.text)
 
@@ -89,7 +105,7 @@ class RSSConnector:
         if not value:
             return datetime.utcnow()
         try:
-            return datetime.strptime(value, "%a, %d %b %Y %H:%M:%S %Z")
+            return email.utils.parsedate_to_datetime(value)
         except Exception:
             try:
                 return datetime.fromisoformat(value.replace("Z", "+00:00"))
