@@ -1,6 +1,8 @@
+import asyncio
 from datetime import datetime, timedelta
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 from sqlalchemy.orm import Session
+from app.config import get_settings
 from app.models import NewsItem
 from app.services.sources.sec_edgar import SECConnector
 from app.services.sources.rss import RSSConnector
@@ -11,10 +13,12 @@ from app.services.sources.normalizer import normalize_symbol
 
 async def ingest_news(
     db: Session,
+    queries: Optional[List[str]] = None,
     max_items_per_source: int = 40,
     recency_hours: int = 48,
 ) -> Dict[str, Any]:
     """Fetch news from all sources, deduplicate, analyze sentiment and store."""
+    settings = get_settings()
     sec = SECConnector()
     rss = RSSConnector()
 
@@ -28,6 +32,29 @@ async def ingest_news(
         raw_items.extend(await rss.fetch_all())
     except Exception as e:
         print(f"RSS fetch failed: {e}")
+
+    # Apify-backed sources (optional; skipped when token/actor ids not configured)
+    apify_max = min(max_items_per_source, settings.apify_max_results_per_source or 20)
+    search_queries = queries or _default_search_queries()
+
+    try:
+        from app.services.sources.reddit import fetch as fetch_reddit
+        from app.services.sources.twitter_x import fetch as fetch_twitter
+        from app.services.sources.news_web import fetch as fetch_news_web
+
+        reddit_items, twitter_items, news_items = await asyncio.gather(
+            fetch_reddit(queries=search_queries, max_items=apify_max),
+            fetch_twitter(queries=search_queries, max_items=apify_max),
+            fetch_news_web(queries=search_queries, max_items=apify_max),
+            return_exceptions=True,
+        )
+        for result, name in [(reddit_items, "reddit"), (twitter_items, "twitter"), (news_items, "news_web")]:
+            if isinstance(result, Exception):
+                print(f"{name} fetch failed: {result}")
+            else:
+                raw_items.extend(result)
+    except Exception as e:
+        print(f"Apify-backed source import failed: {e}")
 
     # Normalize dates and drop very old items
     cutoff = datetime.utcnow() - timedelta(hours=recency_hours)
@@ -98,6 +125,18 @@ async def ingest_news(
         "total_raw": len(raw_items),
         "considered": len(capped),
     }
+
+
+def _default_search_queries() -> List[str]:
+    """Default search queries when none are supplied."""
+    settings = get_settings()
+    watchlist = [s.strip().upper() for s in settings.scheduler_default_watchlist.split(",") if s.strip()]
+    # Search both as cashtags and general keywords
+    queries = []
+    for symbol in watchlist[:10]:
+        queries.append(f"${symbol}")
+        queries.append(symbol)
+    return queries
 
 
 def _extract_tickers(title: str, body: str) -> List[str]:

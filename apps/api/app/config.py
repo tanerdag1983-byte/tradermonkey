@@ -24,6 +24,13 @@ class Settings(BaseSettings):
     alpaca_secret_key: str = ""
     alpaca_base_url: str = "https://paper-api.alpaca.markets"
 
+    # Apify: token + actor ids for Reddit, X/Twitter and news crawling
+    apify_api_token: str = ""
+    apify_reddit_actor_id: str = ""
+    apify_twitter_actor_id: str = ""
+    apify_news_actor_id: str = ""
+    apify_max_results_per_source: int = 20
+
     openrouter_api_key: str = ""
     openrouter_base_url: str = "https://openrouter.ai/api/v1"
 
