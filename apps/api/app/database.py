@@ -55,6 +55,9 @@ def ensure_constraints() -> None:
                     """
                 )
             )
+            # Fix schema drift: signals.direction in the prod DB is still NOT NULL while
+            # the SQLAlchemy model declares it nullable. Allow NO_TRADE/REVIEW rows.
+            conn.execute(text("ALTER TABLE signals ALTER COLUMN direction DROP NOT NULL;"))
         logger.info("Ensured unique index on market_bars(symbol, timeframe, timestamp)")
     except Exception as exc:
         logger.warning("Could not ensure market_bars unique index: %s", exc)

@@ -153,6 +153,13 @@ async def generate_and_store_signal(
     signal = await generate_signal(symbol, portfolio, broker, market_state, sources)
 
     is_trade_intent = signal.get("status") == "TRADE_INTENT"
+    if is_trade_intent and not signal.get("direction"):
+        signal["status"] = "REVIEW_REQUIRED"
+        signal.setdefault("compliance", {}).setdefault("reasons", []).append(
+            "AI output missing direction; requires manual review"
+        )
+        is_trade_intent = False
+
     if is_trade_intent and signal.get("direction"):
         direction = signal["direction"]
         ctx = market_state.get("context", {})
