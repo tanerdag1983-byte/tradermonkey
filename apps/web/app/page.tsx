@@ -4,6 +4,7 @@ import AppHeader from "@/components/app-header";
 import HealthCheck from "@/components/health-check";
 import PortfolioSummaryCards from "@/components/portfolio-summary";
 import LatestResearchProposals from "@/components/latest-research";
+import DashboardChart from "@/components/dashboard-chart";
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -27,6 +28,10 @@ export default async function DashboardPage() {
 
         <div className="mt-8">
           <PortfolioSummaryCards />
+        </div>
+
+        <div className="mt-8">
+          <DashboardChart />
         </div>
 
         <div className="mt-12">
