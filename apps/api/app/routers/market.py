@@ -4,6 +4,7 @@ from typing import Any, Dict
 
 from app.database import get_db
 from app.dependencies.auth import get_current_user, SupabaseUser
+from app.models import MarketBar
 from app.services.market.data import sync_symbol_bars, get_bars_as_df, get_bars_as_records
 from app.services.market.technical import build_market_context
 
@@ -30,7 +31,15 @@ async def get_market_bars(
     db: Session = Depends(get_db),
     user: SupabaseUser = Depends(get_current_user),
 ):
-    """Return stored OHLCV bars."""
+    """Return stored OHLCV bars, syncing with the data source if needed."""
+    # Sync fresh bars if the stored set is incomplete or empty.
+    existing_count = db.query(MarketBar).filter(
+        MarketBar.symbol == symbol.upper(),
+        MarketBar.timeframe == timeframe,
+    ).count()
+    if existing_count < limit:
+        sync_symbol_bars(db, symbol, timeframe=timeframe, lookback_days=max(limit, 120))
+
     bars = get_bars_as_records(db, symbol, timeframe=timeframe, limit=limit)
     return {"success": True, "data": bars}
 
