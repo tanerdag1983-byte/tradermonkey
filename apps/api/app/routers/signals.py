@@ -160,7 +160,16 @@ async def allocate_portfolio(
         watchlist=watchlist_context,
     )
 
-    return {"success": True, "data": result}
+    return {
+        "success": True,
+        "data": {
+            "allocations": result.get("allocations") or [],
+            "summary": {
+                "total_allocated": result.get("total_allocated"),
+                "cash_remaining": result.get("cash_remaining"),
+            },
+        },
+    }
 
 
 @router.get("/feed")
