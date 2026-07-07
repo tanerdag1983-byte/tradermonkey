@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { IChartApi, ISeriesApi } from "lightweight-charts";
 import { apiFetch } from "@/lib/supabase/api";
+import { Loader2 } from "lucide-react";
 
 interface MarketBar {
   timestamp: string;
@@ -50,29 +51,29 @@ export default function MarketChart({ symbol }: { symbol: string }) {
           width: containerRef.current.clientWidth,
           height: 300,
           layout: {
-            background: { color: "#ffffff" },
-            textColor: "#333",
+            background: { color: "#0A0A0B" },
+            textColor: "#94a3b8",
           },
           grid: {
-            vertLines: { color: "#f0f0f0" },
-            horzLines: { color: "#f0f0f0" },
+            vertLines: { color: "#1e293b" },
+            horzLines: { color: "#1e293b" },
           },
           rightPriceScale: {
-            borderColor: "#e0e0e0",
+            borderColor: "#334155",
           },
           timeScale: {
-            borderColor: "#e0e0e0",
+            borderColor: "#334155",
             timeVisible: true,
           },
         });
 
         const candlestickSeries = chart.addSeries(lightweightCharts.CandlestickSeries, {
-          upColor: "#16a34a",
-          downColor: "#dc2626",
-          borderUpColor: "#16a34a",
-          borderDownColor: "#dc2626",
-          wickUpColor: "#16a34a",
-          wickDownColor: "#dc2626",
+          upColor: "#10b981",
+          downColor: "#f43f5e",
+          borderUpColor: "#10b981",
+          borderDownColor: "#f43f5e",
+          wickUpColor: "#10b981",
+          wickDownColor: "#f43f5e",
         });
 
         const data = bars.map((b) => ({
@@ -110,11 +111,16 @@ export default function MarketChart({ symbol }: { symbol: string }) {
   }, [symbol]);
 
   if (loading) {
-    return <div className="text-sm text-zinc-500">Grafiek laden...</div>;
+    return (
+      <div className="h-72 flex items-center justify-center text-sm text-slate-400">
+        <Loader2 className="w-4 h-4 animate-spin mr-2" />
+        Grafiek laden...
+      </div>
+    );
   }
 
   if (error) {
-    return <div className="text-sm text-red-600">{error}</div>;
+    return <div className="h-72 flex items-center justify-center text-sm text-rose-400">{error}</div>;
   }
 
   return <div ref={containerRef} className="w-full" />;

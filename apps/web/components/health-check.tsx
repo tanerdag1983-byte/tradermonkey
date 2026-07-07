@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Activity, CircleDot } from "lucide-react";
 
 interface HealthData {
   status: string;
@@ -26,24 +27,30 @@ export default function HealthCheck() {
   }, []);
 
   if (loading) {
-    return <div className="text-sm text-zinc-500">Status laden...</div>;
+    return (
+      <div className="bg-[#151518] border border-white/5 rounded-xl p-4 shadow-xl">
+        <p className="text-xs text-slate-400 font-mono">API status laden...</p>
+      </div>
+    );
   }
 
+  const isOk = apiHealth?.status === "ok";
+
   return (
-    <div className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm">
-      <h3 className="text-sm font-medium text-zinc-500">API Status</h3>
-      <div className="mt-2 flex items-center gap-2">
-        <span
-          className={`inline-block h-2.5 w-2.5 rounded-full ${
-            apiHealth?.status === "ok" ? "bg-green-500" : "bg-red-500"
-          }`}
-        />
-        <span className="font-semibold text-zinc-900">
-          {apiHealth?.status === "ok" ? "Online" : "Offline"}
+    <div className="bg-[#151518] border border-white/5 rounded-xl p-4 shadow-xl">
+      <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5 mb-3">
+        <Activity className="w-4 h-4 text-cyan-400" />
+        API Status
+      </h3>
+      <div className="flex items-center gap-2">
+        <CircleDot className={`w-4 h-4 ${isOk ? "text-emerald-400 animate-pulse" : "text-rose-400"}`} />
+        <span className="font-semibold text-white">
+          {isOk ? "Online" : "Offline"}
         </span>
       </div>
-      <p className="mt-1 text-xs text-zinc-500">
-        {apiHealth?.app_name || "TraderMonkeys API"} v{apiHealth?.version || "0.1.0"}
+      <p className="mt-1 text-[10px] font-mono text-slate-500">
+        {apiHealth?.app_name || "TraderMonkeys API"} v{apiHealth?.version || "0.1.0"} · {" "}
+        {apiHealth?.environment || "unknown"}
       </p>
     </div>
   );

@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
+import AppHeader from "@/components/app-header";
 import { getNewsFeed, ingestNews } from "@/lib/supabase/api";
+import { RefreshCw, AlertCircle, ExternalLink } from "lucide-react";
 
 interface NewsItem {
   id: string;
@@ -63,79 +64,68 @@ export default function NewsPage() {
   }, []);
 
   return (
-    <div className="min-h-full bg-zinc-50">
-      <header className="border-b border-zinc-200 bg-white">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
-          <div className="flex items-center gap-3">
-            <Link href="/" className="flex items-center gap-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-zinc-900 text-white font-bold">
-                TM
-              </div>
-              <h1 className="text-xl font-bold text-zinc-900">TraderMonkeys</h1>
-            </Link>
-          </div>
-          <Link href="/" className="text-sm font-medium text-zinc-600 hover:text-zinc-900">
-            Terug naar dashboard
-          </Link>
-        </div>
-      </header>
+    <div className="min-h-screen bg-[#0A0A0B] text-slate-200 flex flex-col font-sans selection:bg-cyan-500 selection:text-slate-950">
+      <AppHeader />
 
-      <main className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
-        <div className="mb-8 flex items-center justify-between">
+      <main className="max-w-5xl w-full mx-auto p-4 lg:p-6 flex-1">
+        <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h2 className="text-2xl font-bold text-zinc-900">Nieuws & Sentiment</h2>
-            <p className="text-zinc-600">
-              Aggregatie van SEC filings, finance feeds en meer met AI-sentiment.
-            </p>
+            <h2 className="text-2xl font-bold text-white tracking-tight">Nieuws & Sentiment</h2>
+            <p className="text-sm text-slate-400 mt-1">Aggregatie van SEC filings, finance feeds en meer met AI-sentiment.</p>
           </div>
           <button
             onClick={handleIngest}
             disabled={ingesting}
-            className="rounded-lg bg-zinc-900 px-4 py-2 text-sm font-semibold text-white hover:bg-zinc-800 disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-cyan-500 to-emerald-400 px-4 py-2 text-xs font-bold text-slate-950 hover:opacity-90 disabled:opacity-50 transition-all shadow-md"
           >
+            {ingesting ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
             {ingesting ? "Laden..." : "Haal nieuws op"}
           </button>
         </div>
 
         {error && (
-          <div className="mb-6 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+          <div className="mb-6 bg-rose-950/40 border border-rose-800/80 rounded-lg p-4 text-rose-400 flex items-center gap-3 text-sm font-semibold">
+            <AlertCircle className="w-5 h-5 shrink-0" />
             {error}
           </div>
         )}
 
-        <div className="mb-4 text-xs text-zinc-500">
+        <div className="mb-4 text-xs text-slate-500 font-mono">
           {lastUpdated && <>Laatst bijgewerkt: {lastUpdated.toLocaleTimeString()}</>}
           {loading && !lastUpdated && "Laden..."}
         </div>
 
         <div className="space-y-4">
           {items.length === 0 && !loading && (
-            <p className="text-sm text-zinc-500">Nog geen nieuws. Klik op &quot;Haal nieuws op&quot;.</p>
+            <div className="bg-[#151518] border border-white/5 rounded-xl p-6 text-center">
+              <p className="text-sm text-slate-400">Nog geen nieuws. Klik op &quot;Haal nieuws op&quot;.</p>
+            </div>
           )}
           {items.map((item) => (
             <article
               key={item.id}
-              className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm"
+              className="bg-[#151518] border border-white/5 rounded-xl p-5 shadow-xl hover:border-white/10 transition-all"
             >
               <div className="flex items-start justify-between gap-4">
                 <div className="flex-1">
-                  <div className="mb-2 flex items-center gap-2 text-xs text-zinc-500">
-                    <span className="rounded-full bg-zinc-100 px-2 py-0.5 font-medium uppercase text-zinc-700">
+                  <div className="mb-2 flex flex-wrap items-center gap-2 text-[10px] font-mono text-slate-400 uppercase tracking-wider">
+                    <span className="rounded-full bg-white/5 px-2 py-0.5 font-bold text-slate-300 border border-white/5">
                       {item.source_class}
                     </span>
                     <span>{item.publisher}</span>
-                    <span>•</span>
+                    <span className="text-slate-600">•</span>
                     <span>{new Date(item.published_at).toLocaleString("nl-NL")}</span>
                   </div>
-                  <h3 className="text-base font-semibold text-zinc-900">
+                  <h3 className="text-sm font-bold text-white flex items-center gap-2">
                     {item.url ? (
                       <a
                         href={item.url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="hover:text-blue-600"
+                        className="hover:text-cyan-400 flex items-center gap-1"
                       >
                         {item.title}
+                        <ExternalLink className="w-3 h-3 text-slate-500" />
                       </a>
                     ) : (
                       item.title
@@ -143,7 +133,7 @@ export default function NewsPage() {
                   </h3>
                   {item.body && (
                     <p
-                      className="mt-2 text-sm text-zinc-600 line-clamp-3"
+                      className="mt-2 text-xs text-slate-300 leading-relaxed line-clamp-3"
                       dangerouslySetInnerHTML={{ __html: item.body }}
                     />
                   )}
@@ -154,28 +144,32 @@ export default function NewsPage() {
           ))}
         </div>
       </main>
+
+      <footer className="mt-auto bg-[#0E0E10] border-t border-white/10 py-6 px-6 text-center text-xs text-slate-500">
+        <p>© 2026 TRADERMONKEYS PRO. Alle transacties worden veilig via je broker uitgevoerd.</p>
+      </footer>
     </div>
   );
 }
 
 function SentimentBadge({ score }: { score: number | null }) {
   if (score === null || score === undefined) {
-    return <span className="rounded-full bg-zinc-100 px-2 py-1 text-xs font-medium text-zinc-600">—</span>;
+    return <span className="rounded-full bg-white/5 px-2 py-1 text-[10px] font-medium text-slate-400 border border-white/5 whitespace-nowrap">—</span>;
   }
 
   let label = "Neutraal";
-  let colorClass = "bg-zinc-100 text-zinc-700";
+  let colorClass = "bg-zinc-800 text-slate-400 border-white/5";
 
   if (score > 0.3) {
     label = "Positief";
-    colorClass = "bg-green-100 text-green-700";
+    colorClass = "bg-emerald-950/40 text-emerald-400 border-emerald-800/40";
   } else if (score < -0.3) {
     label = "Negatief";
-    colorClass = "bg-red-100 text-red-700";
+    colorClass = "bg-rose-950/40 text-rose-400 border-rose-800/40";
   }
 
   return (
-    <span className={`rounded-full px-2 py-1 text-xs font-medium whitespace-nowrap ${colorClass}`}>
+    <span className={`rounded-full px-2 py-1 text-[10px] font-bold whitespace-nowrap border ${colorClass}`}>
       {label} {score.toFixed(2)}
     </span>
   );

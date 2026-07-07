@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { getResearchProposals } from "@/lib/supabase/api";
+import { TrendingUp, TrendingDown, Minus } from "lucide-react";
 
 interface ResearchProposal {
   id: string;
@@ -40,19 +41,19 @@ export default function LatestResearchProposals() {
     value !== null && value !== undefined ? `${value.toFixed(2)} ${currency || ""}` : "—";
 
   if (loading) {
-    return <p className="text-sm text-zinc-500">Laatste onderzoeksvoorstellen laden...</p>;
+    return <p className="text-sm text-slate-400">Laatste onderzoeksvoorstellen laden...</p>;
   }
 
   if (error) {
-    return <p className="text-sm text-red-600">{error}</p>;
+    return <p className="text-sm text-rose-400">{error}</p>;
   }
 
   if (proposals.length === 0) {
     return (
-      <div className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm">
-        <p className="text-sm text-zinc-600">
+      <div className="rounded-xl border border-white/5 bg-[#0A0A0B] p-5">
+        <p className="text-sm text-slate-400">
           Nog geen onderzoeksvoorstellen.{" "}
-          <Link href="/onderzoek" className="font-medium text-zinc-900 underline">
+          <Link href="/onderzoek" className="font-medium text-cyan-400 hover:text-cyan-300">
             Genereer je eerste advies
           </Link>
           .
@@ -66,45 +67,47 @@ export default function LatestResearchProposals() {
       {proposals.map((p) => {
         const isBuy = p.direction === "BUY";
         const isSell = p.direction === "SELL";
-        const badgeColor = isBuy
-          ? "bg-green-100 text-green-700"
+        const Icon = isBuy ? TrendingUp : isSell ? TrendingDown : Minus;
+        const badgeClass = isBuy
+          ? "bg-emerald-950/40 border-emerald-800/40 text-emerald-400"
           : isSell
-          ? "bg-red-100 text-red-700"
-          : "bg-zinc-100 text-zinc-700";
+          ? "bg-rose-950/40 border-rose-800/40 text-rose-400"
+          : "bg-blue-950/40 border-blue-800/40 text-blue-400";
         return (
           <Link
             key={p.id}
             href="/onderzoek"
-            className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm hover:border-zinc-300"
+            className="rounded-xl border border-white/5 bg-[#0A0A0B] p-4 hover:border-cyan-500/30 transition-all"
           >
             <div className="mb-2 flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <span className="text-lg font-bold text-zinc-900">{p.symbol}</span>
-                <span className={`rounded-full px-2 py-0.5 text-xs font-medium uppercase ${badgeColor}`}>
+                <span className="text-lg font-bold text-white font-mono">{p.symbol}</span>
+                <span className={`flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase border ${badgeClass}`}>
+                  <Icon className="w-3 h-3" />
                   {p.direction === "BUY" ? "Koop" : p.direction === "SELL" ? "Verkoop" : "Hold"}
                 </span>
               </div>
               {p.confidence !== null && p.confidence !== undefined && (
-                <span className="text-xs text-zinc-500">{(p.confidence * 100).toFixed(0)}%</span>
+                <span className="text-xs font-mono text-cyan-400">{(p.confidence * 100).toFixed(0)}%</span>
               )}
             </div>
-            <p className="mb-3 text-sm text-zinc-700 line-clamp-3">{p.thesis || "Geen beschrijving."}</p>
-            <div className="grid grid-cols-2 gap-2 text-xs text-zinc-600">
-              <div>
-                <span className="block text-zinc-400">Entry</span>
-                <span className="font-medium text-zinc-900">{formatPrice(p.entry_price, p.currency)}</span>
+            <p className="mb-3 text-xs text-slate-300 line-clamp-3 leading-relaxed">{p.thesis || "Geen beschrijving."}</p>
+            <div className="grid grid-cols-2 gap-2 text-xs font-mono">
+              <div className="bg-[#151518] rounded p-2 border border-white/5">
+                <span className="block text-[9px] text-slate-500 uppercase mb-0.5">Entry</span>
+                <span className="text-white font-medium">{formatPrice(p.entry_price, p.currency)}</span>
               </div>
-              <div>
-                <span className="block text-zinc-400">Stop</span>
-                <span className="font-medium text-zinc-900">{formatPrice(p.stop_loss, p.currency)}</span>
+              <div className="bg-[#151518] rounded p-2 border border-white/5">
+                <span className="block text-[9px] text-slate-500 uppercase mb-0.5">Stop</span>
+                <span className="text-rose-400 font-medium">{formatPrice(p.stop_loss, p.currency)}</span>
               </div>
-              <div>
-                <span className="block text-zinc-400">TP1</span>
-                <span className="font-medium text-zinc-900">{formatPrice(p.take_profit_1, p.currency)}</span>
+              <div className="bg-[#151518] rounded p-2 border border-white/5">
+                <span className="block text-[9px] text-slate-500 uppercase mb-0.5">TP1</span>
+                <span className="text-emerald-400 font-medium">{formatPrice(p.take_profit_1, p.currency)}</span>
               </div>
-              <div>
-                <span className="block text-zinc-400">Bedrag</span>
-                <span className="font-medium text-zinc-900">{formatPrice(p.suggested_amount, p.currency)}</span>
+              <div className="bg-[#151518] rounded p-2 border border-white/5">
+                <span className="block text-[9px] text-slate-500 uppercase mb-0.5">Bedrag</span>
+                <span className="text-white font-medium">{formatPrice(p.suggested_amount, p.currency)}</span>
               </div>
             </div>
           </Link>
