@@ -70,6 +70,63 @@ export async function getBrokerStatus() {
   return apiFetch("/broker/status");
 }
 
+export interface ManualPositionInput {
+  symbol: string;
+  quantity: number;
+  avg_price: number;
+  currency?: string;
+}
+
+export async function getManualPositions() {
+  return apiFetch("/manual/positions");
+}
+
+export async function createManualPosition(payload: ManualPositionInput) {
+  return apiFetch("/manual/positions", { method: "POST", body: JSON.stringify(payload) });
+}
+
+export async function updateManualPosition(id: string, payload: Partial<ManualPositionInput>) {
+  return apiFetch(`/manual/positions/${id}`, { method: "PUT", body: JSON.stringify(payload) });
+}
+
+export async function deleteManualPosition(id: string) {
+  return apiFetch(`/manual/positions/${id}`, { method: "DELETE" });
+}
+
+export interface ManualOrderInput {
+  symbol: string;
+  direction: "BUY" | "SELL";
+  order_type: "market" | "limit" | "stop" | "stop_limit";
+  quantity: number;
+  filled_price?: number;
+  limit_price?: number;
+  stop_price?: number;
+  status?: string;
+}
+
+export async function getManualOrders(status?: string) {
+  const qs = status ? `?status=${encodeURIComponent(status)}` : "";
+  return apiFetch(`/manual/orders${qs}`);
+}
+
+export async function createManualOrder(payload: ManualOrderInput) {
+  return apiFetch("/manual/orders", { method: "POST", body: JSON.stringify(payload) });
+}
+
+export async function deleteManualOrder(id: string) {
+  return apiFetch(`/manual/orders/${id}`, { method: "DELETE" });
+}
+
+export async function runPositionAdvice(symbols?: string[]) {
+  return apiFetch("/manual/advice/run", { method: "POST", body: JSON.stringify({ symbols }) });
+}
+
+export async function getPositionAdvice(symbol?: string, limit: number = 20) {
+  let path = `/manual/advice?limit=${limit}`;
+  if (symbol) path += `&symbol=${encodeURIComponent(symbol)}`;
+  return apiFetch(path);
+}
+
 export interface GenerateResearchRequest {
   symbol?: string;
   watchlist?: string[];

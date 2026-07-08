@@ -39,16 +39,19 @@ async def fetch(
 
 def _normalize(item: Dict[str, Any]) -> Dict[str, Any]:
     title = item.get("title") or ""
-    body = item.get("selftext") or item.get("body") or ""
+    body = item.get("body") or item.get("selftext") or ""
     text = f"{title} {body}".strip()
     url = item.get("url") or item.get("permalink") or ""
-    published = item.get("created_utc") or item.get("created")
+    published = item.get("createdAt") or item.get("created_utc") or item.get("created")
     published_at = _to_datetime(published)
+    publisher = item.get("communityName") or item.get("subreddit") or "reddit"
+    author = item.get("username") or "reddit"
 
     return {
         "source": "reddit",
         "source_class": "social",
-        "publisher": item.get("subreddit") or "reddit",
+        "publisher": publisher,
+        "author": author,
         "title": title or text[:120],
         "body": body,
         "language": "en",

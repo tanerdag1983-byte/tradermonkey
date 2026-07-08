@@ -20,11 +20,6 @@ async def fetch(
         logger.warning("Apify news actor not configured; skipping.")
         return []
 
-    # easyapi/google-news-scraper schema uncertain; return empty until validated.
-    # Remove the guard once a working input schema is confirmed.
-    logger.warning("News actor (%s) is set but schema not validated; skipping.", actor_id)
-    return []
-
     if client is None:
         client = ApifyClient(token=settings.apify_api_token)
 
@@ -32,7 +27,12 @@ async def fetch(
     for query in queries:
         if not query.strip():
             continue
-        run_input = {"queries": [query], "maxResults": max_items}
+        # easyapi/google-news-scraper expects a single string query and maxItems >= 100.
+        run_input = {
+            "query": query,
+            "maxItems": max(max_items, 100),
+            "sort": "new",
+        }
         items = await client.run_actor(actor_id, run_input)
         results.extend(items)
         logger.info("Apify news query '%s' returned %d items", query, len(items))
@@ -42,12 +42,13 @@ async def fetch(
 
 def _normalize(item: Dict[str, Any]) -> Dict[str, Any]:
     title = item.get("title") or ""
-    snippet = item.get("description") or item.get("snippet") or ""
+    snippet = item.get("snippet") or ""
     body = item.get("text") or item.get("content") or snippet
-    url = item.get("url") or item.get("link") or ""
-    publisher = item.get("source") or item.get("publisher") or "news"
-    published = item.get("publishedAt") or item.get("date") or item.get("published_at")
+    url = item.get("link") or item.get("url") or ""
+    publisher = item.get("source") or item.get("domain") or "news"
+    published = item.get("date_utc") or item.get("date") or item.get("publishedAt") or item.get("published_at")
     published_at = _to_datetime(published)
+    language = item.get("language") or "en"
 
     return {
         "source": "apify-news",
@@ -55,7 +56,7 @@ def _normalize(item: Dict[str, Any]) -> Dict[str, Any]:
         "publisher": publisher,
         "title": title,
         "body": body,
-        "language": item.get("language") or "en",
+        "language": language,
         "published_at": published_at,
         "url": url,
         "entities": {},

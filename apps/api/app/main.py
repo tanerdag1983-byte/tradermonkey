@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import get_settings
 from app.database import engine, Base, ensure_constraints
-from app.routers import health, sync, news, signals, market, broker, system, scheduler, research
+from app.routers import health, sync, news, signals, market, broker, system, scheduler, research, manual
 from app.services.scheduler import build_scheduler
 
 logger = logging.getLogger(__name__)
@@ -58,6 +58,7 @@ app.include_router(broker.router)
 app.include_router(system.router)
 app.include_router(scheduler.router)
 app.include_router(research.router)
+app.include_router(manual.router)
 
 
 @app.get("/")

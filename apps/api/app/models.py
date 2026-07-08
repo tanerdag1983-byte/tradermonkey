@@ -172,3 +172,19 @@ class UserSetting(Base):
         UniqueConstraint("user_id", "key", name="uq_user_settings_user_key"),
         {"comment": "Per-user key/value settings"},
     )
+
+
+class PositionAdvice(Base):
+    __tablename__ = "position_advice"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id = Column(String, nullable=False, index=True)
+    symbol = Column(String, nullable=False, index=True)
+    quantity = Column(Float, nullable=False)
+    avg_price = Column(Float, nullable=False)
+    latest_price = Column(Float, nullable=True)
+    recommendation = Column(String, nullable=False, default="NO_ADVICE")
+    confidence = Column(Float, nullable=True)
+    reasoning = Column(Text, nullable=True)
+    news_sentiment_avg = Column(Float, nullable=True)
+    generated_at = Column(DateTime(timezone=True), default=datetime.utcnow)

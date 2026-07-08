@@ -13,7 +13,13 @@ async def fetch(
     max_items: int = 20,
     client: Optional[ApifyClient] = None,
 ) -> List[Dict[str, Any]]:
-    """Fetch recent X/Twitter posts for the given search queries via Apify."""
+    """X/Twitter source using an Apify actor.
+
+Recommended production actor (pay-per-result):
+  kaitoeasyapi/twitter-x-data-tweet-scraper-pay-per-result-cheapest
+
+Configure the actor id via APIFY_TWITTER_ACTOR_ID.
+"""
     settings = get_settings()
     actor_id = settings.apify_twitter_actor_id
     if not actor_id:
