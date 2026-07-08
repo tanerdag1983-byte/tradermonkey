@@ -18,7 +18,7 @@ async def fetch(
     settings = get_settings()
     actor_id = settings.apify_reddit_actor_id
     if not actor_id:
-        logger.debug("Apify Reddit actor not configured; skipping.")
+        logger.warning("Apify Reddit actor not configured; skipping.")
         return []
 
     if client is None:

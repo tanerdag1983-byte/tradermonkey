@@ -1,4 +1,5 @@
 import asyncio
+import logging
 from datetime import datetime, timedelta
 from typing import List, Dict, Any, Optional
 from sqlalchemy.orm import Session
@@ -9,6 +10,8 @@ from app.services.sources.rss import RSSConnector
 from app.services.sources.dedup import is_duplicate
 from app.services.ml.sentiment import analyze_sentiment, sentiment_to_score
 from app.services.sources.normalizer import normalize_symbol
+
+logger = logging.getLogger(__name__)
 
 
 async def ingest_news(
@@ -37,6 +40,14 @@ async def ingest_news(
     apify_max = min(max_items_per_source, settings.apify_max_results_per_source or 20)
     search_queries = queries or _default_search_queries()
 
+    logger.info(
+        "Apify sources config: token=%s reddit=%s twitter=%s news=%s",
+        "set" if settings.apify_api_token else "missing",
+        settings.apify_reddit_actor_id or "none",
+        settings.apify_twitter_actor_id or "none",
+        settings.apify_news_actor_id or "none",
+    )
+
     try:
         from app.services.sources.reddit import fetch as fetch_reddit
         from app.services.sources.twitter_x import fetch as fetch_twitter
@@ -50,11 +61,12 @@ async def ingest_news(
         )
         for result, name in [(reddit_items, "reddit"), (twitter_items, "twitter"), (news_items, "news_web")]:
             if isinstance(result, Exception):
-                print(f"{name} fetch failed: {result}")
+                logger.warning("%s fetch failed: %s", name, result)
             else:
+                logger.info("%s fetch returned %d raw items", name, len(result))
                 raw_items.extend(result)
     except Exception as e:
-        print(f"Apify-backed source import failed: {e}")
+        logger.warning("Apify-backed source import failed: %s", e)
 
     # Normalize dates and drop very old items
     cutoff = datetime.utcnow() - timedelta(hours=recency_hours)

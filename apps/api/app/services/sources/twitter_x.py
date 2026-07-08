@@ -17,7 +17,7 @@ async def fetch(
     settings = get_settings()
     actor_id = settings.apify_twitter_actor_id
     if not actor_id:
-        logger.debug("Apify X/Twitter actor not configured; skipping.")
+        logger.warning("Apify X/Twitter actor not configured; skipping.")
         return []
 
     if client is None:

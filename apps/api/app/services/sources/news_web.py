@@ -17,7 +17,7 @@ async def fetch(
     settings = get_settings()
     actor_id = settings.apify_news_actor_id
     if not actor_id:
-        logger.debug("Apify news actor not configured; skipping.")
+        logger.warning("Apify news actor not configured; skipping.")
         return []
 
     if client is None:
