@@ -324,7 +324,7 @@ async def run_position_advice(
         try:
             completion = await client.chat_completion(
                 messages=[{"role": "user", "content": prompt}],
-                model="anthropic/claude-3.5-sonnet",
+                model="anthropic/claude-sonnet-5",
                 temperature=0.1,
                 max_tokens=1200,
                 response_format={"type": "json_object"},

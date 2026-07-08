@@ -150,7 +150,7 @@ Recent news:
                 {"role": "system", "content": "You are a helpful AI trading assistant."},
                 {"role": "user", "content": prompt},
             ],
-            model="anthropic/claude-3.5-sonnet",
+            model="anthropic/claude-sonnet-5",
             temperature=0.5,
             max_tokens=300,
         )
