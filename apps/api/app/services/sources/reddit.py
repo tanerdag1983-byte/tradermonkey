@@ -25,19 +25,11 @@ async def fetch(
         client = ApifyClient(token=settings.apify_api_token)
 
     # trudax/reddit-scraper-lite expects 'searches' as a list of plain strings.
-    searches: List[str] = []
-    subs = subreddits or ["wallstreetbets", "investing", "stocks", "StockMarket"]
-    for sub in subs:
-        searches.append(f"subreddit:{sub}")
-
-    for query in queries:
-        if query.strip():
-            searches.append(query.strip())
-
+    searches = [q.strip() for q in queries if q and q.strip()]
     if not searches:
         return []
 
-    run_input: Dict[str, Any] = {"searches": searches, "maxItems": max_items * 4, "sort": "new"}
+    run_input: Dict[str, Any] = {"searches": searches, "maxItems": max_items * 2, "sort": "new"}
 
     items = await client.run_actor(actor_id, run_input)
     logger.info("Apify Reddit run returned %d items", len(items))

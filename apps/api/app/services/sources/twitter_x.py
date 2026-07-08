@@ -28,7 +28,7 @@ async def fetch(
         if not query.strip():
             continue
         run_input = {"searchTerms": [query], "maxItems": max_items}
-        items = await client.run_actor(actor_id, run_input, max_items=max_items)
+        items = await client.run_actor(actor_id, run_input)
         results.extend(items)
         logger.info("Apify X/Twitter query '%s' returned %d items", query, len(items))
 
