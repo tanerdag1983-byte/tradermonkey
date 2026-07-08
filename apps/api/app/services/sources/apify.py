@@ -7,7 +7,7 @@ import httpx
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_TIMEOUT_SECONDS = 90
+DEFAULT_TIMEOUT_SECONDS = 120
 POLL_INTERVAL_SECONDS = 2
 
 
@@ -35,8 +35,9 @@ class ApifyClient:
         if not self._require_token():
             return []
 
-        if "/" not in actor_id:
-            logger.warning("Apify actor id should be in 'owner/actor' format: %s", actor_id)
+        # Actor IDs can be numeric (e.g. 61RPP7dywgiy0JPD0) or username/name.
+        if not actor_id:
+            logger.warning("Apify actor id is empty")
             return []
 
         try:
@@ -48,13 +49,17 @@ class ApifyClient:
             logger.warning("Apify run failed for %s: %s", actor_id, exc)
             return []
 
+    def _url_actor_id(self, actor_id: str) -> str:
+        """Apify API paths expect username~actorName, not username/actorName."""
+        return actor_id.replace("/", "~")
+
     async def _start_run(
         self,
         actor_id: str,
         run_input: Dict[str, Any],
         timeout_seconds: int,
     ) -> tuple[Optional[str], Optional[str]]:
-        url = f"{self.base_url}/acts/{actor_id}/runs"
+        url = f"{self.base_url}/acts/{self._url_actor_id(actor_id)}/runs"
         params = {"token": self.token, "timeout": timeout_seconds}
         async with httpx.AsyncClient(timeout=httpx.Timeout(timeout_seconds + 15)) as client:
             response = await client.post(url, params=params, json=run_input)
