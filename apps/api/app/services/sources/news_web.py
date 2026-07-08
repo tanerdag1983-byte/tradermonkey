@@ -20,6 +20,11 @@ async def fetch(
         logger.warning("Apify news actor not configured; skipping.")
         return []
 
+    # easyapi/google-news-scraper schema uncertain; return empty until validated.
+    # Remove the guard once a working input schema is confirmed.
+    logger.warning("News actor (%s) is set but schema not validated; skipping.", actor_id)
+    return []
+
     if client is None:
         client = ApifyClient(token=settings.apify_api_token)
 
@@ -28,7 +33,7 @@ async def fetch(
         if not query.strip():
             continue
         run_input = {"queries": [query], "maxResults": max_items}
-        items = await client.run_actor(actor_id, run_input, max_items=max_items)
+        items = await client.run_actor(actor_id, run_input)
         results.extend(items)
         logger.info("Apify news query '%s' returned %d items", query, len(items))
 

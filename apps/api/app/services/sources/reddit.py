@@ -39,7 +39,7 @@ async def fetch(
 
     run_input: Dict[str, Any] = {"searches": searches, "maxItems": max_items * 4, "sort": "new"}
 
-    items = await client.run_actor(actor_id, run_input, max_items=max_items * 4)
+    items = await client.run_actor(actor_id, run_input)
     logger.info("Apify Reddit run returned %d items", len(items))
 
     return [_normalize(item) for item in items]
