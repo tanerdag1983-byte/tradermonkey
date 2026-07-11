@@ -327,11 +327,15 @@ async def run_position_advice(
                 model="anthropic/claude-sonnet-5",
                 temperature=0.1,
                 max_tokens=1200,
-                response_format={"type": "json_object"},
             )
             content = completion["choices"][0]["message"]["content"]
-            import json
-            parsed = json.loads(content)
+            import json, re
+            # Try direct JSON parse; if it fails, extract first {...} block
+            try:
+                parsed = json.loads(content)
+            except json.JSONDecodeError:
+                match = re.search(r"\{.*\}", content, re.DOTALL)
+                parsed = json.loads(match.group(0)) if match else {"recommendation": "NO_ADVICE", "confidence": 0.0, "reasoning": "Failed to parse JSON"}
         except Exception as exc:
             parsed = {
                 "recommendation": "NO_ADVICE",
