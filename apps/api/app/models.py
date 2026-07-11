@@ -188,3 +188,27 @@ class PositionAdvice(Base):
     reasoning = Column(Text, nullable=True)
     news_sentiment_avg = Column(Float, nullable=True)
     generated_at = Column(DateTime(timezone=True), default=datetime.utcnow)
+
+
+class TradeRecord(Base):
+    __tablename__ = "trade_records"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id = Column(String, nullable=False, index=True)
+    symbol = Column(String, nullable=False, index=True)
+    direction = Column(String, nullable=False)  # BUY / SELL
+    quantity = Column(Float, nullable=False)
+    entry_price = Column(Float, nullable=False)
+    exit_price = Column(Float, nullable=True)
+    entry_time = Column(DateTime(timezone=True), default=datetime.utcnow)
+    exit_time = Column(DateTime(timezone=True), nullable=True)
+    realized_pnl = Column(Float, nullable=True)
+    pnl_pct = Column(Float, nullable=True)
+    max_favorable_excursion = Column(Float, nullable=True)  # MFE
+    max_adverse_excursion = Column(Float, nullable=True)    # MAE
+    status = Column(String, nullable=False, default="open")  # open / closed
+    source = Column(String, nullable=True)  # signal / manual / research
+    source_id = Column(String, nullable=True)  # reference to signal/order/research id
+    notes = Column(Text, nullable=True)
+    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
+    updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)

@@ -6,6 +6,7 @@ import httpx
 
 
 FEEDS = {
+    # Existing feeds
     "yahoo_finance": {
         "url": "https://finance.yahoo.com/news/rssindex",
         "source_class": "editorial",
@@ -34,6 +35,61 @@ FEEDS = {
         "url": "https://www.sec.gov/news/pressreleases.rss",
         "source_class": "regulator_news",
         "publisher": "SEC Newsroom",
+        "language": "en",
+    },
+    # New financial news sources (RSS)
+    "tradingeconomics": {
+        "url": "https://tradingeconomics.com/rss/news.aspx",
+        "source_class": "editorial",
+        "publisher": "Trading Economics",
+        "language": "en",
+    },
+    "marketwatch": {
+        "url": "https://feeds.marketwatch.com/marketwatch/marketpulse/",
+        "source_class": "editorial",
+        "publisher": "MarketWatch",
+        "language": "en",
+    },
+    "investing_com": {
+        "url": "https://www.investing.com/rss/news_285.rss",
+        "source_class": "editorial",
+        "publisher": "Investing.com",
+        "language": "en",
+    },
+    "reuters_markets": {
+        "url": "https://www.reuters.com/markets/rss",
+        "source_class": "news_wire",
+        "publisher": "Reuters Markets",
+        "language": "en",
+    },
+    "barchart": {
+        "url": "https://www.barchart.com/rss/news.xml",
+        "source_class": "editorial",
+        "publisher": "Barchart",
+        "language": "en",
+    },
+    "ft_markets": {
+        "url": "https://www.ft.com/markets?format=rss",
+        "source_class": "editorial",
+        "publisher": "Financial Times Markets",
+        "language": "en",
+    },
+    "bloomberg_europe": {
+        "url": "https://feeds.bloomberg.com/markets/news.rss",
+        "source_class": "news_wire",
+        "publisher": "Bloomberg Europe",
+        "language": "en",
+    },
+    "morningstar": {
+        "url": "https://www.morningstar.com/rss/market-news",
+        "source_class": "editorial",
+        "publisher": "Morningstar",
+        "language": "en",
+    },
+    "marketscreener": {
+        "url": "https://www.marketscreener.com/rss/news.xml",
+        "source_class": "editorial",
+        "publisher": "MarketScreener",
         "language": "en",
     },
 }

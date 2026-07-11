@@ -12,6 +12,7 @@ from app.database import get_db
 from app.dependencies.auth import get_current_user, SupabaseUser
 from app.models import Broker, Order, Position, PositionAdvice, MarketBar
 from app.services.llm.openrouter import OpenRouterClient
+from app.services.trade_journal import create_trade_record
 
 router = APIRouter(prefix="/manual", tags=["manual"])
 
@@ -224,6 +225,19 @@ async def create_order(
     db.add(order)
     db.commit()
     db.refresh(order)
+
+    # Create trade journal record
+    create_trade_record(
+        db=db,
+        user_id=user.id,
+        symbol=symbol,
+        direction=payload.direction,
+        quantity=payload.quantity,
+        entry_price=price,
+        order_id=str(order.id),
+        strategy="manual",
+    )
+
     return {"success": True, "data": _order_to_dict(order)}
 
 

@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from app.config import get_settings
 from app.models import Signal, Order
 from app.services.brokers.alpaca import AlpacaClient
+from app.services.trade_journal import create_trade_record
 
 
 def get_active_broker() -> Dict[str, Any]:
@@ -58,6 +59,20 @@ async def execute_signal(
         )
         db.add(order)
         signal.status = "executed"
+        
+        # Create trade journal record
+        filled_price = order_response.get("filled_avg_price") or signal.entry_price
+        create_trade_record(
+            db=db,
+            user_id=user_id,
+            symbol=signal.symbol,
+            direction=signal.direction,
+            quantity=signal.quantity,
+            entry_price=filled_price,
+            source="signal",
+            source_id=str(signal.id),
+        )
+        
         db.commit()
 
         return {"success": True, "data": order_response, "broker": broker_info}
