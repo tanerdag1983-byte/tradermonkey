@@ -130,7 +130,7 @@ def calculate_trade_stats(db: Session, user_id: str) -> dict:
         "win_rate": len(wins) / len(trades) * 100,
         "avg_win": total_wins / len(wins) if wins else 0,
         "avg_loss": total_losses / len(losses) if losses else 0,
-        "profit_factor": total_wins / total_losses if total_losses > 0 else float("inf"),
+        "profit_factor": total_wins / total_losses if total_losses > 0 else None,
         "avg_mfe": sum(mfe_values) / len(mfe_values) if mfe_values else 0,
         "avg_mae": sum(mae_values) / len(mae_values) if mae_values else 0,
     }
