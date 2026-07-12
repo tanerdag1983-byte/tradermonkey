@@ -111,6 +111,39 @@ def calculate_volume_surge(df: pd.DataFrame, window: int = 20) -> bool:
     return bool(avg_volume > 0 and last_volume > avg_volume * 1.5)
 
 
+def calculate_macd(series: pd.Series, fast: int = 12, slow: int = 26, signal: int = 9) -> Dict[str, pd.Series]:
+    """Calculate MACD line, signal line, and histogram."""
+    ema_fast = calculate_ema(series, fast)
+    ema_slow = calculate_ema(series, slow)
+    macd_line = ema_fast - ema_slow
+    signal_line = calculate_ema(macd_line, signal)
+    histogram = macd_line - signal_line
+    return {
+        "macd": macd_line,
+        "signal": signal_line,
+        "histogram": histogram,
+    }
+
+
+def calculate_bollinger_bands(series: pd.Series, window: int = 20, num_std: float = 2.0) -> Dict[str, pd.Series]:
+    """Calculate Bollinger Bands."""
+    sma = calculate_sma(series, window)
+    std = series.rolling(window=window, min_periods=1).std()
+    upper = sma + num_std * std
+    lower = sma - num_std * std
+    return {
+        "upper": upper,
+        "middle": sma,
+        "lower": lower,
+        "width": (upper - lower) / sma,
+    }
+
+
+def detect_patterns(df: pd.DataFrame) -> List[str]:
+    """Alias for candlestick pattern detection."""
+    return detect_candlestick_patterns(df)
+
+
 def classify_trend(df: pd.DataFrame, fast: int = 10, slow: int = 30) -> str:
     df = _ensure_df(df)
     if len(df) < slow:

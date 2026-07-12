@@ -13,6 +13,7 @@ from app.dependencies.auth import get_current_user, SupabaseUser
 from app.models import Broker, Order, Position, PositionAdvice, MarketBar
 from app.services.llm.openrouter import OpenRouterClient
 from app.services.trade_journal import create_trade_record
+from app.services.ai_deep_research import DeepResearchAgent
 
 router = APIRouter(prefix="/manual", tags=["manual"])
 
@@ -308,72 +309,30 @@ async def run_position_advice(
     if not positions:
         return {"success": True, "data": {"advice": [], "note": "No positions to watch"}}
 
-    client = OpenRouterClient()
+    agent = DeepResearchAgent(db, user.id)
     advices = []
     for position in positions:
         symbol = position.symbol.upper()
-        close = _latest_close(db, symbol)
-        recent_news = (
-            db.query(PositionAdvice)
-            # placeholder; we actually need NewsItem, import it locally below
-        )
-        # Keep query minimal: fetch latest 5 news items mentioning the symbol
-        from app.models import NewsItem
-        news_items = (
-            db.query(NewsItem)
-            .filter(NewsItem.title.ilike(f"%{symbol}%") | NewsItem.body.ilike(f"%{symbol}%"))
-            .order_by(NewsItem.published_at.desc())
-            .limit(5)
-            .all()
-        )
-        news_summary = []
-        sentiment_avg = 0.0
-        if news_items:
-            sentiments = [n.sentiment_score for n in news_items if n.sentiment_score is not None]
-            sentiment_avg = sum(sentiments) / len(sentiments) if sentiments else 0.0
-            news_summary = [
-                {"title": n.title, "sentiment_score": n.sentiment_score, "published_at": n.published_at.isoformat() if n.published_at else None}
-                for n in news_items
-            ]
+        position_data = {
+            "symbol": symbol,
+            "direction": "BUY" if position.quantity > 0 else "SELL",
+            "quantity": abs(position.quantity),
+            "avg_price": position.avg_price,
+        }
+        result = await agent.research_symbol(symbol, position_data)
 
-        prompt = _build_advice_prompt(position, close, sentiment_avg, news_summary)
-        try:
-            completion = await client.chat_completion(
-                messages=[{"role": "user", "content": prompt}],
-                model="anthropic/claude-sonnet-5",
-                temperature=0.1,
-                max_tokens=1200,
-            )
-            content = completion["choices"][0]["message"]["content"]
-            import json, re
-            # Try direct JSON parse; if it fails, extract first {...} block
-            try:
-                parsed = json.loads(content)
-            except json.JSONDecodeError:
-                match = re.search(r"\{.*\}", content, re.DOTALL)
-                parsed = json.loads(match.group(0)) if match else {"recommendation": "NO_ADVICE", "confidence": 0.0, "reasoning": "Failed to parse JSON"}
-        except Exception as exc:
-            parsed = {
-                "recommendation": "NO_ADVICE",
-                "confidence": 0.0,
-                "reasoning": f"AI call failed: {exc}",
-            }
-
-        recommendation = parsed.get("recommendation", "NO_ADVICE")
-        confidence = parsed.get("confidence", 0.0)
-        reasoning = parsed.get("reasoning", "")
-
+        # Store advice
         advice = PositionAdvice(
             id=uuid4(),
             user_id=user.id,
             symbol=symbol,
             quantity=position.quantity,
             avg_price=position.avg_price,
-            latest_price=close,
-            recommendation=recommendation,
-            confidence=confidence,
-            reasoning=reasoning,
-            news_sentiment_avg=sentiment_avg,
+            latest_price=result.get("report", {}).get("technical_analysis", {}).get("current_price"),
+            recommendation=result.get("recommendation", "NO_ADVICE"),
+            confidence=result.get("confidence", 0.0),
+            reasoning=result.get("reasoning", ""),
+            news_sentiment_avg=result.get("report", {}).get("news_analysis", {}).get("sentiment_score", 0.0),
             generated_at=datetime.now(timezone.utc),
         )
         db.add(advice)
