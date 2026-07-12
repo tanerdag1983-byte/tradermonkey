@@ -80,6 +80,36 @@ def _trade_to_dict(t: TradeRecord) -> dict:
     }
 
 
+# Specific routes FIRST (before parameterized routes)
+@router.get("/open")
+async def list_open_trades(
+    db: Session = Depends(get_db),
+    user: SupabaseUser = Depends(get_current_user),
+):
+    trades = get_open_trades(db, user.id)
+    return {"success": True, "data": [_trade_to_dict(t) for t in trades]}
+
+
+@router.get("/closed")
+async def list_closed_trades(
+    limit: int = Query(100, ge=1, le=500),
+    offset: int = Query(0, ge=0),
+    db: Session = Depends(get_db),
+    user: SupabaseUser = Depends(get_current_user),
+):
+    trades = get_closed_trades(db, user.id, limit=limit, offset=offset)
+    return {"success": True, "data": [_trade_to_dict(t) for t in trades]}
+
+
+@router.get("/stats")
+async def get_trade_stats(
+    db: Session = Depends(get_db),
+    user: SupabaseUser = Depends(get_current_user),
+):
+    stats = calculate_trade_stats(db, user.id)
+    return {"success": True, "data": stats}
+
+
 @router.post("")
 async def create_trade(
     payload: TradeRecordCreate,
@@ -119,15 +149,7 @@ async def list_trades(
     return {"success": True, "data": [_trade_to_dict(t) for t in trades]}
 
 
-@router.get("/stats")
-async def get_trade_stats(
-    db: Session = Depends(get_db),
-    user: SupabaseUser = Depends(get_current_user),
-):
-    stats = calculate_trade_stats(db, user.id)
-    return {"success": True, "data": stats}
-
-
+# Parameterized routes LAST
 @router.get("/{trade_id}")
 async def get_trade(
     trade_id: UUID,
