@@ -242,7 +242,7 @@ class DeepResearchAgent:
         try:
             completion = await self.client.chat_completion(
                 messages=[{"role": "user", "content": prompt}],
-                model="anthropic/claude-sonnet-5",
+                model="anthropic/claude-3-haiku",
                 temperature=0.1,
                 max_tokens=2000,
             )
