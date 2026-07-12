@@ -379,6 +379,19 @@ def _advice_to_dict(a: PositionAdvice) -> dict:
     }
 
 
+@router.get("/advice/debug/{symbol}")
+async def debug_position_advice(
+    symbol: str,
+    db: Session = Depends(get_db),
+    user: SupabaseUser = Depends(get_current_user),
+):
+    """Debug endpoint to inspect deep research data for a symbol."""
+    from app.services.ai_deep_research import DeepResearchAgent
+    agent = DeepResearchAgent(db, user.id)
+    result = await agent.research_symbol(symbol.upper())
+    return {"success": True, "data": result}
+
+
 def _build_advice_prompt(position: Position, latest_price: Optional[float], sentiment_avg: float, news_summary: list) -> str:
     unrealized_pct = 0.0
     if latest_price and position.avg_price:
