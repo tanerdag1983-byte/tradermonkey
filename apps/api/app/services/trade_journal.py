@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 from typing import Optional, List
-from uuid import uuid4, UUID
+from uuid import UUID, uuid4
 from sqlalchemy.orm import Session
 from app.models import TradeRecord
 
@@ -17,28 +17,24 @@ def create_trade_record(
     position_id: Optional[str] = None,
     strategy: str = "manual",
 ) -> TradeRecord:
-    try:
-        trade = TradeRecord(
-            id=uuid4(),
-            user_id=user_id,
-            symbol=symbol.upper(),
-            direction=direction.upper(),
-            quantity=quantity,
-            entry_price=entry_price,
-            entry_time=datetime.now(timezone.utc),
-            order_id=UUID(order_id) if order_id else None,
-            signal_id=UUID(signal_id) if signal_id else None,
-            position_id=UUID(position_id) if position_id else None,
-            strategy=strategy,
-            status="open",
-        )
-        db.add(trade)
-        db.commit()
-        db.refresh(trade)
-        return trade
-    except Exception as e:
-        db.rollback()
-        raise RuntimeError(f"Failed to create trade record: {e}") from e
+    """Create a new trade record for the journal. Uses existing columns."""
+    trade = TradeRecord(
+        id=uuid4(),
+        user_id=user_id,
+        symbol=symbol.upper(),
+        direction=direction.upper(),
+        quantity=quantity,
+        entry_price=entry_price,
+        entry_time=datetime.now(timezone.utc),
+        # Map new fields to existing columns
+        source=strategy,
+        source_id=order_id or signal_id or position_id,
+        status="open",
+    )
+    db.add(trade)
+    db.commit()
+    db.refresh(trade)
+    return trade
 
 
 def close_trade_record(
@@ -47,13 +43,18 @@ def close_trade_record(
     exit_price: float,
     realized_pnl: float,
 ) -> Optional[TradeRecord]:
+    """Close a trade record with exit details."""
     trade = db.query(TradeRecord).filter(TradeRecord.id == trade_id).first()
     if not trade:
         return None
+    
     trade.exit_price = exit_price
     trade.exit_time = datetime.now(timezone.utc)
     trade.realized_pnl = realized_pnl
     trade.status = "closed"
+    # Calculate P&L percentage
+    if trade.entry_price * trade.quantity > 0:
+        trade.pnl_pct = (realized_pnl / (trade.entry_price * trade.quantity)) * 100
     db.commit()
     db.refresh(trade)
     return trade
@@ -64,12 +65,13 @@ def update_trade_mfe_mae(
     trade: TradeRecord,
     current_price: float,
 ) -> Optional[TradeRecord]:
+    """Update Maximum Favorable Excursion (MFE) and Maximum Adverse Excursion (MAE) for an open trade."""
     if not trade or trade.status != "open":
         return None
 
     if trade.direction == "BUY":
         excursion = (current_price - trade.entry_price) / trade.entry_price * 100
-    else:
+    else:  # SELL
         excursion = (trade.entry_price - current_price) / trade.entry_price * 100
 
     if trade.max_favorable_excursion is None or excursion > trade.max_favorable_excursion:
@@ -97,6 +99,7 @@ def get_closed_trades(db: Session, user_id: str, limit: int = 100, offset: int =
 
 
 def calculate_trade_stats(db: Session, user_id: str) -> dict:
+    """Calculate trade statistics for learning loop feedback."""
     trades = db.query(TradeRecord).filter(
         TradeRecord.user_id == user_id,
         TradeRecord.status == "closed",
@@ -131,3 +134,7 @@ def calculate_trade_stats(db: Session, user_id: str) -> dict:
         "avg_mfe": sum(mfe_values) / len(mfe_values) if mfe_values else 0,
         "avg_mae": sum(mae_values) / len(mae_values) if mae_values else 0,
     }
+
+
+def update_mfe_mae(db: Session, trade: TradeRecord, current_price: float) -> Optional[TradeRecord]:
+    return update_trade_mfe_mae(db, trade, current_price)

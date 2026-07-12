@@ -46,13 +46,13 @@ class TradeRecordResponse(BaseModel):
     exit_price: Optional[float]
     exit_time: Optional[datetime]
     realized_pnl: Optional[float]
+    pnl_pct: Optional[float]
     max_favorable_excursion: Optional[float]
     max_adverse_excursion: Optional[float]
     status: str
-    strategy: str
-    order_id: Optional[str]
-    signal_id: Optional[str]
-    position_id: Optional[str]
+    source: Optional[str]
+    source_id: Optional[str]
+    notes: Optional[str]
 
     class Config:
         from_attributes = True
@@ -70,13 +70,13 @@ def _trade_to_dict(t: TradeRecord) -> dict:
         "exit_price": t.exit_price,
         "exit_time": t.exit_time.isoformat() if t.exit_time else None,
         "realized_pnl": t.realized_pnl,
+        "pnl_pct": t.pnl_pct,
         "max_favorable_excursion": t.max_favorable_excursion,
         "max_adverse_excursion": t.max_adverse_excursion,
         "status": t.status,
-        "strategy": t.strategy,
-        "order_id": t.order_id,
-        "signal_id": t.signal_id,
-        "position_id": t.position_id,
+        "source": t.source,
+        "source_id": t.source_id,
+        "notes": t.notes,
     }
 
 
