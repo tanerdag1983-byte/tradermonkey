@@ -116,19 +116,22 @@ async def create_trade(
     db: Session = Depends(get_db),
     user: SupabaseUser = Depends(get_current_user),
 ):
-    trade = create_trade_record(
-        db=db,
-        user_id=user.id,
-        symbol=payload.symbol,
-        direction=payload.direction,
-        quantity=payload.quantity,
-        entry_price=payload.entry_price,
-        order_id=payload.order_id,
-        signal_id=payload.signal_id,
-        position_id=payload.position_id,
-        strategy=payload.strategy,
-    )
-    return {"success": True, "data": _trade_to_dict(trade)}
+    try:
+        trade = create_trade_record(
+            db=db,
+            user_id=user.id,
+            symbol=payload.symbol,
+            direction=payload.direction,
+            quantity=payload.quantity,
+            entry_price=payload.entry_price,
+            order_id=payload.order_id,
+            signal_id=payload.signal_id,
+            position_id=payload.position_id,
+            strategy=payload.strategy,
+        )
+        return {"success": True, "data": _trade_to_dict(trade)}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
 
 
 @router.get("")

@@ -202,43 +202,45 @@ async def create_order(
     db: Session = Depends(get_db),
     user: SupabaseUser = Depends(get_current_user),
 ):
-    symbol = payload.symbol.upper()
-    price = payload.filled_price
-    if price is None and payload.order_type == "market":
-        price = _latest_close(db, symbol)
-    if price is None:
-        return {"success": False, "error": "Provide filled_price or a market bar for the symbol"}
+    try:
+        symbol = payload.symbol.upper()
+        price = payload.filled_price
+        if price is None and payload.order_type == "market":
+            price = _latest_close(db, symbol)
+        if price is None:
+            return {"success": False, "error": "Provide filled_price or a market bar for the symbol"}
 
-    broker = _get_or_create_manual_broker(db, user)
-    order = Order(
-        user_id=user.id,
-        broker_id=broker.id,
-        symbol=symbol,
-        direction=payload.direction.upper(),
-        order_type=payload.order_type,
-        quantity=payload.quantity,
-        status=payload.status,
-        filled_price=price,
-        limit_price=payload.limit_price,
-        stop_price=payload.stop_price,
-    )
-    db.add(order)
-    db.commit()
-    db.refresh(order)
+        broker = _get_or_create_manual_broker(db, user)
+        order = Order(
+            user_id=user.id,
+            broker_id=broker.id,
+            symbol=symbol,
+            direction=payload.direction.upper(),
+            order_type=payload.order_type,
+            quantity=payload.quantity,
+            status=payload.status,
+            filled_price=price,
+            limit_price=payload.limit_price,
+            stop_price=payload.stop_price,
+        )
+        db.add(order)
+        db.commit()
+        db.refresh(order)
 
-    # Create trade journal record
-    create_trade_record(
-        db=db,
-        user_id=user.id,
-        symbol=symbol,
-        direction=payload.direction,
-        quantity=payload.quantity,
-        entry_price=price,
-        order_id=str(order.id),
-        strategy="manual",
-    )
+        create_trade_record(
+            db=db,
+            user_id=user.id,
+            symbol=symbol,
+            direction=payload.direction,
+            quantity=payload.quantity,
+            entry_price=price,
+            order_id=str(order.id),
+            strategy="manual",
+        )
 
-    return {"success": True, "data": _order_to_dict(order)}
+        return {"success": True, "data": _order_to_dict(order)}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
 
 
 @router.get("/orders")
