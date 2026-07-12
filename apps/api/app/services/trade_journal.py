@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 from typing import Optional, List
-from uuid import uuid4
+from uuid import uuid4, UUID
 from sqlalchemy.orm import Session
 from app.models import TradeRecord
 
@@ -17,24 +17,28 @@ def create_trade_record(
     position_id: Optional[str] = None,
     strategy: str = "manual",
 ) -> TradeRecord:
-    trade = TradeRecord(
-        id=uuid4(),
-        user_id=user_id,
-        symbol=symbol.upper(),
-        direction=direction.upper(),
-        quantity=quantity,
-        entry_price=entry_price,
-        entry_time=datetime.now(timezone.utc),
-        order_id=order_id,
-        signal_id=signal_id,
-        position_id=position_id,
-        strategy=strategy,
-        status="open",
-    )
-    db.add(trade)
-    db.commit()
-    db.refresh(trade)
-    return trade
+    try:
+        trade = TradeRecord(
+            id=uuid4(),
+            user_id=user_id,
+            symbol=symbol.upper(),
+            direction=direction.upper(),
+            quantity=quantity,
+            entry_price=entry_price,
+            entry_time=datetime.now(timezone.utc),
+            order_id=UUID(order_id) if order_id else None,
+            signal_id=UUID(signal_id) if signal_id else None,
+            position_id=UUID(position_id) if position_id else None,
+            strategy=strategy,
+            status="open",
+        )
+        db.add(trade)
+        db.commit()
+        db.refresh(trade)
+        return trade
+    except Exception as e:
+        db.rollback()
+        raise RuntimeError(f"Failed to create trade record: {e}") from e
 
 
 def close_trade_record(
