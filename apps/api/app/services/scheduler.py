@@ -1,6 +1,6 @@
 import asyncio
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 
 from app.config import get_settings
 from app.database import SessionLocal
+from app.models import TradeRecord, UserSetting, ResearchProposal
 from app.services.sources.ingestor import ingest_news
 from app.services.signal.runner import generate_and_store_signal
 from app.services.notifications import (
@@ -18,8 +19,98 @@ from app.services.notifications import (
     send_email,
 )
 from app.services.research.runner import generate_research_for_watchlist
+from app.services.trade_journal import calculate_trade_stats
+from app.services.llm.openrouter import OpenRouterClient
 
 logger = logging.getLogger(__name__)
+
+
+async def learning_loop_job():
+    """Scheduled job to evaluate trade performance and update AI prompts with learned insights."""
+    settings = get_settings()
+    db: Session = SessionLocal()
+    try:
+        logger.info("[scheduler] Starting learning loop evaluation")
+        
+        # Get all users who have closed trades
+        user_ids = db.query(TradeRecord.user_id).filter(
+            TradeRecord.status == "closed"
+        ).distinct().all()
+        user_ids = [uid[0] for uid in user_ids]
+        
+        for user_id in user_ids:
+            stats = calculate_trade_stats(db, user_id)
+            if stats["total_trades"] < 5:
+                continue  # Need minimum trades for meaningful feedback
+            
+            # Generate learning summary
+            learning_summary = _generate_learning_summary(stats)
+            
+            # Store/update user setting with learning insights
+            existing = db.query(UserSetting).filter(
+                UserSetting.user_id == user_id,
+                UserSetting.key == "learning_insights"
+            ).first()
+            
+            if existing:
+                existing.value = learning_summary
+                existing.updated_at = datetime.now(timezone.utc)
+            else:
+                new_setting = UserSetting(
+                    user_id=user_id,
+                    key="learning_insights",
+                    value=learning_summary
+                )
+                db.add(new_setting)
+            
+            db.commit()
+            logger.info("[scheduler] Updated learning insights for user %s", user_id)
+        
+        logger.info("[scheduler] Learning loop completed for %d users", len(user_ids))
+    except Exception as e:
+        logger.exception("[scheduler] Learning loop failed: %s", e)
+    finally:
+        db.close()
+
+
+def _generate_learning_summary(stats: dict) -> dict:
+    """Generate a concise learning summary from trade statistics."""
+    return {
+        "win_rate": round(stats["win_rate"], 1),
+        "profit_factor": round(stats["profit_factor"], 2) if stats["profit_factor"] != float("inf") else "high",
+        "avg_win": round(stats["avg_win"], 2),
+        "avg_loss": round(stats["avg_loss"], 2),
+        "avg_mfe": round(stats["avg_mfe"], 1),
+        "avg_mae": round(stats["avg_mae"], 1),
+        "total_trades": stats["total_trades"],
+        "updated_at": datetime.now(timezone.utc).isoformat(),
+        "key_insight": _derive_key_insight(stats),
+    }
+
+
+def _derive_key_insight(stats: dict) -> str:
+    """Derive a single actionable insight from trade statistics."""
+    insights = []
+    if stats["win_rate"] < 40:
+        insights.append("Win rate below 40% - consider tightening entry criteria or reducing position size")
+    elif stats["win_rate"] > 60:
+        insights.append("Win rate above 60% - current strategy working well")
+    
+    if stats["profit_factor"] != float("inf") and stats["profit_factor"] < 1.5:
+        insights.append("Profit factor below 1.5 - review risk/reward ratios")
+    
+    if stats["avg_mae"] < -3:
+        insights.append("Average adverse excursion exceeds 3% - tighten stop losses")
+    
+    if stats["avg_mfe"] > 5 and stats["avg_mae"] > -2:
+        insights.append("Good MFE/MAE ratio - consider scaling winners")
+    
+    return "; ".join(insights) if insights else "No significant patterns detected"
+
+
+async def learning_loop_now() -> dict:
+    await learning_loop_job()
+    return {"success": True, "message": "Learning loop evaluation triggered"}
 
 
 async def ingest_news_job():
@@ -137,7 +228,6 @@ async def send_research_digest_job(force: bool = False):
     user_id = settings.scheduler_user_id
     db: Session = SessionLocal()
     try:
-        from app.models import ResearchProposal
         proposals = (
             db.query(ResearchProposal)
             .filter(ResearchProposal.user_id == user_id, ResearchProposal.frequency == "daily")
@@ -231,6 +321,15 @@ def build_scheduler() -> AsyncIOScheduler:
         trigger=CronTrigger(hour=digest_hour, minute=digest_minute, day_of_week="mon-fri"),
         id="send_research_digest",
         name="Daily research digest email to admin",
+        replace_existing=True,
+    )
+
+    # Learning loop daily at 18:00 (after market close), weekdays only
+    scheduler.add_job(
+        learning_loop_job,
+        trigger=CronTrigger(hour=18, minute=0, day_of_week="mon-fri"),
+        id="learning_loop",
+        name="Daily trade performance learning loop",
         replace_existing=True,
     )
 
