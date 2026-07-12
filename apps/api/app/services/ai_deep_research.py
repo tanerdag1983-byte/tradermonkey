@@ -10,6 +10,8 @@ from app.services.market.technical import build_market_context
 from app.services.market.data import get_bars_as_df
 from app.config import get_settings
 
+import numpy as np
+
 
 class DeepResearchAgent:
     """Multi-step research agent for comprehensive position analysis."""
@@ -108,7 +110,7 @@ class DeepResearchAgent:
             # Add more indicators
             from app.services.market.technical import (
                 calculate_rsi, calculate_macd, calculate_bollinger_bands,
-                calculate_atr, detect_candlestick_patterns as detect_patterns
+                calculate_atr, detect_candlestick_patterns
             )
             
             close = df['close']
@@ -217,7 +219,6 @@ class DeepResearchAgent:
                 return "bearish"
             return "neutral"
 
-        import numpy as np
         return {
             "spy_trend": get_trend(spy_df),
             "qqq_trend": get_trend(qqq_df),
@@ -237,6 +238,7 @@ class DeepResearchAgent:
         # Build comprehensive prompt
         prompt = self._build_synthesis_prompt(report)
 
+        content = ""
         try:
             completion = await self.client.chat_completion(
                 messages=[{"role": "user", "content": prompt}],
@@ -262,7 +264,7 @@ class DeepResearchAgent:
             "key_levels": parsed.get("key_levels", {}),
             "time_horizon": parsed.get("time_horizon", "1-5 days"),
             "risk_factors": parsed.get("risk_factors", []),
-            "full_response": content if 'content' in locals() else "",
+            "full_response": content,
         }
 
     def _build_synthesis_prompt(self, report: Dict[str, Any]) -> str:
